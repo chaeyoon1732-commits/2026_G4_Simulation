@@ -34,7 +34,8 @@ export const signIn = async () => {
         alert("로그인 페이지로 이동하는 중 오류가 발생했습니다.");
       }
     } else if (error.code === 'auth/unauthorized-domain') {
-      alert("현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다.");
+      const currentDomain = window.location.hostname;
+      alert(`현재 도메인(${currentDomain})이 Firebase 승인된 도메인에 등록되지 않았습니다. \n\nFirebase 콘솔(프로젝트 ID: gen-lang-client-0783562913)에서 이 도메인을 추가해 주세요.`);
     } else {
       alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
     }
