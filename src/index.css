@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-hyundai-blue: #002C5F;
+  --color-hyundai-light-blue: #0072C6;
+  --color-hyundai-sand: #E4DCD3;
+  --font-hyundai: "Hyundai Sans Head", "Inter", sans-serif;
+}
+
+:root {
+  --app-font-size: 16px;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-hyundai transition-colors duration-300;
+    font-size: var(--app-font-size);
+  }
+  
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl transition-colors duration-300;
+  }
+  
+  .dark .glass-card {
+    @apply bg-slate-900/70 border-slate-800/50;
+  }
+  
+  .hyundai-btn-primary {
+    @apply bg-hyundai-blue text-white px-6 py-3 rounded-none hover:opacity-90 transition-all font-medium disabled:opacity-30;
+  }
+  
+  .dark .hyundai-btn-primary {
+    @apply bg-hyundai-light-blue;
+  }
+  
+  .hyundai-btn-outline {
+    @apply border-2 border-hyundai-blue text-hyundai-blue px-6 py-3 rounded-none hover:bg-hyundai-blue hover:text-white transition-all font-medium;
+  }
+  
+  .dark .hyundai-btn-outline {
+    @apply border-hyundai-light-blue text-hyundai-light-blue hover:bg-hyundai-light-blue;
+  }
+}
+
+/* Custom scrollbar for chat */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #002C5F44;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #002C5F66;
+}

@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "SimulationResult": {
+      "title": "SimulationResult",
+      "description": "Stores the results of an AI interview simulation session.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The email or unique ID of the user." },
+        "personaId": { "type": "string" },
+        "scenarioId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "score": { "type": "number" },
+        "grade": { "type": "string", "enum": ["S", "A", "B", "C", "D"] },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "trust": { "type": "number" },
+            "acceptance": { "type": "number" },
+            "stability": { "type": "number" },
+            "engagement": { "type": "number" }
+          }
+        },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" },
+            "quantitative": {
+              "type": "object",
+              "properties": {
+                "speechRatio": { "type": "number" },
+                "safetyTrend": { "type": "array", "items": { "type": "number" } },
+                "keywords": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "psychologicalResponse": { "type": "string" },
+            "leadershipDiagnosis": { "type": "string" },
+            "teamMemberNeeds": { "type": "string" },
+            "strengths": { "type": "string" },
+            "improvements": { "type": "string" },
+            "recommendedDialogue": { "type": "string" },
+            "executionGuide": { "type": "string" },
+            "riskManagement": { "type": "string" },
+            "actionGuide": { "type": "string" }
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "content": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["userId", "personaId", "scenarioId", "timestamp", "score"]
+    }
+  },
+  "firestore": {
+    "/simulations/{simulationId}": {
+      "schema": "SimulationResult",
+      "description": "Collection of simulation results."
+    }
+  }
+}
