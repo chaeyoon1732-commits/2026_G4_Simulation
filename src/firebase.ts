@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { PERSONAS, SCENARIOS } from './constants';
@@ -10,27 +10,51 @@ export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const googleProvider = new GoogleAuthProvider();
 
-// 구글 로그인/로그아웃 함수
+// 구글 로그인 함수 (팝업 및 리다이렉트 대응)
 export const signIn = async () => {
   try {
+    // 한국어 주석: 먼저 팝업 방식으로 로그인을 시도합니다.
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error: any) {
-    // 한국어 주석: 로그인 실패 시 상세 에러를 콘솔에 출력하여 원인 파악을 돕습니다.
     console.error("Firebase Login Error:", error.code, error.message);
     
-    if (error.code === 'auth/popup-closed-by-user') {
-      console.warn("사용자가 로그인 팝업을 닫았습니다.");
+    // 한국어 주석: 팝업이 차단되었거나 브라우저 설정(COOP 등)으로 인해 실패한 경우 리다이렉트 방식으로 전환합니다.
+    if (
+      error.code === 'auth/popup-blocked' || 
+      error.code === 'auth/popup-closed-by-user' ||
+      error.code === 'auth/cancelled-popup-request' ||
+      error.code === 'auth/internal-error' // COOP 이슈 시 종종 internal-error 발생
+    ) {
+      console.log("팝업 방식 실패, 리다이렉트 방식으로 전환합니다...");
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirectError) {
+        console.error("Redirect Login Error:", redirectError);
+        alert("로그인 페이지로 이동하는 중 오류가 발생했습니다.");
+      }
     } else if (error.code === 'auth/unauthorized-domain') {
-      alert("현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다. Firebase 콘솔 설정을 확인해주세요.");
-    } else if (error.code === 'auth/cancelled-popup-request') {
-      console.warn("이전 팝업 요청이 취소되었습니다.");
+      alert("현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다.");
     } else {
       alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
     }
     throw error;
   }
 };
+
+// 한국어 주석: 리다이렉트 후 돌아왔을 때 결과를 처리하는 함수
+export const handleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      return result.user;
+    }
+  } catch (error) {
+    console.error("Error handling redirect result:", error);
+  }
+  return null;
+};
+
 export const signOut = () => auth.signOut();
 
 /**

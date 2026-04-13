@@ -4,7 +4,7 @@ import { Persona, Scenario, Category } from './constants';
 import SimulationScreen from './components/SimulationScreen';
 import ReportScreen from './components/ReportScreen';
 import { ChatMessage } from './geminiService';
-import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore } from './firebase';
+import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
   ChevronRight, Users, MessageSquare, ShieldCheck, HeartHandshake, 
@@ -29,6 +29,9 @@ export default function App() {
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
+    // 한국어 주석: 리다이렉트 로그인 결과를 확인합니다.
+    handleRedirectResult();
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
