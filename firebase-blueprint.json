@@ -1,5 +1,34 @@
 {
   "entities": {
+    "Persona": {
+      "title": "Persona",
+      "description": "Interviewee persona details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "department": { "type": "string", "enum": ["영업", "서비스"] },
+        "description": { "type": "string" },
+        "traits": { "type": "array", "items": { "type": "string" } },
+        "mbti": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["상", "중", "하"] },
+        "recentIssue": { "type": "string" }
+      }
+    },
+    "Scenario": {
+      "title": "Scenario",
+      "description": "Interview scenario details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "guide": { "type": "string" },
+        "goals": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "SimulationResult": {
       "title": "SimulationResult",
       "description": "Stores the results of an AI interview simulation session.",
@@ -58,9 +87,18 @@
     }
   },
   "firestore": {
+    "/2026_G4_Simulation/personas/items/{personaId}": {
+      "schema": "Persona",
+      "description": "Collection of personas."
+    },
+    "/2026_G4_Simulation/scenarios/items/{scenarioId}": {
+      "schema": "Scenario",
+      "description": "Collection of scenarios."
+    },
     "/simulations/{simulationId}": {
       "schema": "SimulationResult",
       "description": "Collection of simulation results."
     }
   }
 }
+

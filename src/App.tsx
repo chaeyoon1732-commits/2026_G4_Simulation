@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PERSONAS, SCENARIOS, Persona, Scenario, Category } from './constants';
+import { Persona, Scenario, Category } from './constants';
 import SimulationScreen from './components/SimulationScreen';
 import ReportScreen from './components/ReportScreen';
 import { ChatMessage } from './geminiService';
-import { auth, signIn, signOut } from './firebase';
+import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
   ChevronRight, Users, MessageSquare, ShieldCheck, HeartHandshake, 
@@ -22,9 +22,28 @@ export default function App() {
   const [fontSize, setFontSize] = useState(16);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [activeTab, setActiveTab] = useState<Category>('목표/평가');
+  
+  // Firestore에서 가져온 데이터를 저장할 상태
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        // 1. 사용자가 로그인하면 초기 데이터를 Firestore에 시드(seed)합니다.
+        // 한국어 주석: 앱 실행 시 한 번만 실행되도록 설계할 수도 있지만, 여기서는 로그인 시 확인합니다.
+        await seedInitialData();
+        
+        // 2. Firestore에서 데이터를 읽어옵니다.
+        const pData = await fetchPersonasFromFirestore();
+        const sData = await fetchScenariosFromFirestore();
+        setPersonas(pData);
+        setScenarios(sData);
+        setLoadingData(false);
+      }
+    });
     return () => unsubscribe();
   }, []);
 
@@ -179,40 +198,47 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {['영업', '서비스'].map(dept => (
-                <div key={dept} className="space-y-6">
-                  <h2 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue border-b border-slate-200 dark:border-slate-800 pb-2">
-                    {dept === '영업' ? '영업 부문 💼' : '서비스 부문 🛠️'}
-                  </h2>
-                  <div className="grid gap-4">
-                    {PERSONAS.filter(p => p.department === dept).map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => handlePersonaSelect(p)}
-                        className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue group relative overflow-hidden"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded ${
-                              p.difficulty === '상' ? 'bg-red-100 text-red-600' : 
-                              p.difficulty === '중' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                            }`}>난이도 {p.difficulty}</span>
-                            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded">{p.mbti}</span>
-                          </div>
-                          <span className="text-xs font-medium text-slate-400">{p.role}</span>
-                        </div>
-                        <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-2">{p.name}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">{p.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {p.traits.map((t, i) => (
-                            <span key={i} className="text-[10px] bg-hyundai-blue/5 dark:bg-hyundai-light-blue/10 text-hyundai-blue dark:text-hyundai-light-blue px-2 py-1 rounded">#{t}</span>
-                          ))}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+              {loadingData ? (
+                <div className="col-span-2 text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-hyundai-blue mx-auto mb-4"></div>
+                  <p className="text-slate-500">데이터를 불러오는 중입니다...</p>
                 </div>
-              ))}
+              ) : (
+                ['영업', '서비스'].map(dept => (
+                  <div key={dept} className="space-y-6">
+                    <h2 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue border-b border-slate-200 dark:border-slate-800 pb-2">
+                      {dept === '영업' ? '영업 부문 💼' : '서비스 부문 🛠️'}
+                    </h2>
+                    <div className="grid gap-4">
+                      {personas.filter(p => p.department === dept).map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePersonaSelect(p)}
+                          className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue group relative overflow-hidden"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-bold px-2 py-1 rounded ${
+                                p.difficulty === '상' ? 'bg-red-100 text-red-600' : 
+                                p.difficulty === '중' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                              }`}>난이도 {p.difficulty}</span>
+                              <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded">{p.mbti}</span>
+                            </div>
+                            <span className="text-xs font-medium text-slate-400">{p.role}</span>
+                          </div>
+                          <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-2">{p.name}</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">{p.description}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {p.traits.map((t, i) => (
+                              <span key={i} className="text-[10px] bg-hyundai-blue/5 dark:bg-hyundai-light-blue/10 text-hyundai-blue dark:text-hyundai-light-blue px-2 py-1 rounded">#{t}</span>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         )}
@@ -253,35 +279,42 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SCENARIOS.filter(s => s.category === activeTab).map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => handleScenarioSelect(s)}
-                  className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue flex flex-col h-full"
-                >
-                  <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-3">{s.title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 flex-1">{s.description}</p>
-                  
-                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <div>
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-hyundai-blue dark:text-hyundai-light-blue uppercase mb-1">
-                        <Target className="w-3 h-3" /> Goals
+              {loadingData ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-hyundai-blue mx-auto mb-4"></div>
+                  <p className="text-slate-500">데이터를 불러오는 중입니다...</p>
+                </div>
+              ) : (
+                scenarios.filter(s => s.category === activeTab).map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => handleScenarioSelect(s)}
+                    className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue flex flex-col h-full"
+                  >
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-3">{s.title}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 flex-1">{s.description}</p>
+                    
+                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-hyundai-blue dark:text-hyundai-light-blue uppercase mb-1">
+                          <Target className="w-3 h-3" /> Goals
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {s.goals.map((g, i) => (
+                            <span key={i} className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{g}</span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {s.goals.map((g, i) => (
-                          <span key={i} className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{g}</span>
-                        ))}
+                      <div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase mb-1">
+                          <Info className="w-3 h-3" /> Guide
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 italic leading-tight">{s.guide}</p>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase mb-1">
-                        <Info className="w-3 h-3" /> Guide
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 italic leading-tight">{s.guide}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))
+              )}
             </div>
           </motion.div>
         )}
