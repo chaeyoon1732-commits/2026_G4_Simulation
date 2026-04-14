@@ -10,6 +10,7 @@ export interface Persona {
   mbti: string;
   difficulty: '상' | '중' | '하';
   recentIssue: string;
+  imageUrl?: string;
 }
 
 export interface Scenario {

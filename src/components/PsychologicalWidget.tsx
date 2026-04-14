@@ -17,13 +17,13 @@ export default function PsychologicalWidget({ state }: Props) {
 
   return (
     <div className="glass-card p-6 rounded-xl overflow-hidden flex flex-col items-center min-h-[400px]">
-      <h3 className="text-[10px] font-black text-hyundai-blue dark:text-hyundai-light-blue mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+      <h3 className="text-[10px] font-black text-hyundai-blue mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
         <span className="w-2 h-2 bg-hyundai-gold rounded-full animate-pulse" />
         실시간 코칭 지표 (H-Radar)
       </h3>
       
       <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%" debounce={50} key={`radar-${state?.rapport}-${state?.situation}`}>
+        <ResponsiveContainer width="100%" height="100%" debounce={50}>
           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
             <PolarGrid stroke="#cbd5e1" />
             <PolarAngleAxis 
@@ -47,16 +47,16 @@ export default function PsychologicalWidget({ state }: Props) {
         {data.map((item) => (
           <motion.div 
             key={item.subject}
-            className="flex flex-col p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700"
+            className="flex flex-col p-2 bg-slate-50 rounded-lg border border-slate-100"
           >
             <span className="text-[9px] font-bold text-slate-400 uppercase mb-1">{item.subject}</span>
             <div className="flex items-end justify-between">
-              <span className="text-lg font-black text-hyundai-blue dark:text-hyundai-light-blue">{item.A}</span>
+              <span className="text-lg font-black text-hyundai-blue">{item.A}</span>
               <span className="text-[10px] text-slate-400 mb-1">%</span>
             </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-700 h-1 rounded-full mt-1 overflow-hidden">
+            <div className="w-full bg-slate-200 h-1 rounded-full mt-1 overflow-hidden">
               <motion.div 
-                className="h-full bg-hyundai-blue dark:bg-hyundai-light-blue"
+                className="h-full bg-hyundai-blue"
                 initial={{ width: 0 }}
                 animate={{ width: `${item.A}%` }}
                 transition={{ duration: 1 }}

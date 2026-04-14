@@ -122,3 +122,77 @@ export async function generateReportAnalysis(history: ChatMessage[], persona: Pe
     return null;
   }
 }
+
+export async function generateAIPersona(department: string) {
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    config: {
+      systemInstruction: `
+        당신은 현대자동차의 HR 전문가입니다. 
+        현대자동차 국내사업본부의 현장감을 살린 가상의 팀원 페르소나를 생성하세요.
+        부문: ${department} (영업 또는 서비스)
+        
+        [출력 형식]
+        반드시 아래의 JSON 구조로 응답하세요:
+        {
+          "name": "이름 (예: 김현수)",
+          "role": "직위 (예: 영업대리, 서비스엔지니어 등)",
+          "department": "${department}",
+          "difficulty": "상, 중, 하 중 하나",
+          "mbti": "MBTI 유형",
+          "traits": ["성격 특징 키워드 3개"],
+          "description": "페르소나에 대한 상세 설명 (3-4문장)"
+        }
+      `,
+      responseMimeType: "application/json",
+    },
+    contents: `${department} 부문에 어울리는 새로운 페르소나를 생성해 주세요.`
+  });
+  
+  try {
+    return JSON.parse(response.text);
+  } catch (e) {
+    console.error("Failed to parse AI persona:", response.text);
+    return null;
+  }
+}
+
+export async function generateAIScenario(category: string) {
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    config: {
+      systemInstruction: `
+        당신은 현대자동차의 리더십 코칭 전문가입니다. 
+        현대자동차 국내사업본부 리더들이 겪을 법한 실전 면담 시나리오를 생성하세요.
+        카테고리: ${category}
+        
+        [출력 형식]
+        반드시 아래의 JSON 구조로 응답하세요:
+        {
+          "title": "시나리오 제목",
+          "category": "${category}",
+          "description": "상황에 대한 상세 설명 (학습자가 읽고 상황을 파악할 수 있도록)",
+          "goals": ["면담을 통해 달성해야 할 구체적 목표 3개"],
+          "guide": "리더를 위한 면담 가이드/팁 (1-2문장)"
+        }
+      `,
+      responseMimeType: "application/json",
+    },
+    contents: `${category} 카테고리에 어울리는 새로운 면담 시나리오를 생성해 주세요.`
+  });
+  
+  try {
+    return JSON.parse(response.text);
+  } catch (e) {
+    console.error("Failed to parse AI scenario:", response.text);
+    return null;
+  }
+}
+
+export async function generatePersonaImage(persona: any) {
+  // AI 이미지 생성 API가 별도로 없으므로, Picsum이나 다른 서비스를 활용한 키워드 기반 이미지 URL 생성 로직을 제안하거나
+  // 혹은 Gemini의 이미지 생성 능력을 활용할 수 있는 구조를 만듭니다.
+  // 여기서는 Picsum seed를 페르소나 특징에 맞게 생성하여 반환합니다.
+  const seed = encodeURIComponent(`${persona.name}-${persona.role}-${persona.traits.join('-')}`);
+  return `https://picsum.photos/seed/${seed}/400/400`;
+}

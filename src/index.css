@@ -23,10 +23,6 @@
     line-height: 1.6;
   }
   
-  .dark body {
-    @apply bg-black text-slate-100;
-  }
-  
   /* Robust font scaling: use rem for everything */
   h1 { @apply text-4xl font-black leading-tight; }
   h2 { @apply text-2xl font-bold; }
@@ -39,24 +35,12 @@
     @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl transition-all duration-300;
   }
   
-  .dark .glass-card {
-    @apply bg-slate-900/90 border-slate-700 shadow-2xl shadow-black;
-  }
-  
   .hyundai-btn-primary {
     @apply bg-hyundai-blue text-white px-8 py-4 rounded-sm hover:bg-hyundai-light-blue active:scale-95 transition-all font-bold disabled:opacity-30 shadow-lg;
   }
   
-  .dark .hyundai-btn-primary {
-    @apply bg-hyundai-light-blue hover:bg-blue-500;
-  }
-  
   .hyundai-btn-outline {
     @apply border-2 border-hyundai-blue text-hyundai-blue px-8 py-4 rounded-sm hover:bg-hyundai-blue hover:text-white active:scale-95 transition-all font-bold;
-  }
-  
-  .dark .hyundai-btn-outline {
-    @apply border-hyundai-light-blue text-hyundai-light-blue hover:bg-hyundai-light-blue hover:text-white;
   }
 
   .hyundai-gold-accent {
@@ -73,7 +57,4 @@
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-hyundai-blue/20 rounded-full hover:bg-hyundai-blue/40 transition-colors;
-}
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 hover:bg-white/20;
 }

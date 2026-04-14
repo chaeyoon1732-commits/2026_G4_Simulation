@@ -6,8 +6,10 @@ import ReportScreen from './components/ReportScreen';
 import DashboardScreen from './components/DashboardScreen';
 import { ChatMessage } from './geminiService';
 import AdminScreen from './components/AdminScreen';
-import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult, checkIsAdmin } from './firebase';
+import { auth, db, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult, checkIsAdmin, getUserProfile, updateUserProfile } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { PERSONAS, SCENARIOS } from './constants';
 import { 
   ChevronRight, Users, MessageSquare, ShieldCheck, HeartHandshake, 
   ArrowLeft, Sun, Moon, Type, LogOut, LogIn, Star, Target, Info, LayoutDashboard, Settings
@@ -20,11 +22,13 @@ export default function App() {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(18); // Increased default
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<Category>('목표/평가');
+  const [showNamePopup, setShowNamePopup] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [tempName, setTempName] = useState('');
   
   // Firestore에서 가져온 데이터를 저장할 상태
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -35,36 +39,50 @@ export default function App() {
     // 한국어 주석: 리다이렉트 로그인 결과를 확인합니다.
     handleRedirectResult();
 
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         setIsAdmin(checkIsAdmin(u.email));
-        // 1. 사용자가 로그인하면 초기 데이터를 Firestore에 시드(seed)합니다.
-        // 한국어 주석: 앱 실행 시 한 번만 실행되도록 설계할 수도 있지만, 여기서는 로그인 시 확인합니다.
         await seedInitialData();
         
-        // 2. Firestore에서 데이터를 읽어옵니다.
-        const pData = await fetchPersonasFromFirestore();
-        const sData = await fetchScenariosFromFirestore();
-        setPersonas(pData);
-        setScenarios(sData);
-        setLoadingData(false);
+        // Check for user profile
+        const profile = await getUserProfile(u.uid);
+        if (profile && profile.name) {
+          setUserName(profile.name);
+        } else {
+          setShowNamePopup(true);
+        }
       } else {
         setIsAdmin(false);
+        setUserName('');
       }
     });
-    return () => unsubscribe();
-  }, []);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    }
-  }, [isDarkMode]);
+    // Real-time listeners for personas and scenarios
+    const unsubPersonas = onSnapshot(collection(db, '2026_G4_Simulation', 'personas', 'items'), (snapshot) => {
+      const pData = snapshot.docs.map(doc => doc.data() as Persona);
+      setPersonas(pData.length > 0 ? pData : PERSONAS);
+      setLoadingData(false);
+    }, (error) => {
+      console.error("Error subscribing to personas:", error);
+      setPersonas(PERSONAS);
+      setLoadingData(false);
+    });
+
+    const unsubScenarios = onSnapshot(collection(db, '2026_G4_Simulation', 'scenarios', 'items'), (snapshot) => {
+      const sData = snapshot.docs.map(doc => doc.data() as Scenario);
+      setScenarios(sData.length > 0 ? sData : SCENARIOS);
+    }, (error) => {
+      console.error("Error subscribing to scenarios:", error);
+      setScenarios(SCENARIOS);
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubPersonas();
+      unsubScenarios();
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--app-font-size', `${fontSize}px`);
@@ -100,23 +118,31 @@ export default function App() {
     setHistory([]);
   };
 
+  const handleSaveName = async () => {
+    if (!tempName.trim()) return;
+    if (user) {
+      const success = await updateUserProfile(user.uid, { 
+        name: tempName,
+        email: user.email,
+        updatedAt: new Date()
+      });
+      if (success) {
+        setUserName(tempName);
+        setShowNamePopup(false);
+      }
+    }
+  };
+
   const categories: Category[] = ['목표/평가', '인사통보', '직원케어', '성과관리'];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black font-hyundai transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 font-hyundai transition-colors duration-300">
       {/* Global Controls */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
-        <button 
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="p-4 bg-white dark:bg-slate-800 shadow-2xl rounded-full text-hyundai-blue dark:text-hyundai-light-blue hover:scale-110 transition-all border border-slate-200 dark:border-slate-700"
-          title="다크모드 전환"
-        >
-          {isDarkMode ? <Sun className="w-7 h-7" /> : <Moon className="w-7 h-7" />}
-        </button>
-        <div className="flex flex-col bg-white dark:bg-slate-800 shadow-2xl rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700">
+        <div className="flex flex-col bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200">
           <button 
             onClick={() => setFontSize(prev => Math.min(prev + 2, 32))}
-            className="p-4 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex flex-col items-center"
+            className="p-4 text-hyundai-blue hover:bg-slate-100 transition-all flex flex-col items-center"
             title="글씨 크게"
           >
             <Type className="w-7 h-7" />
@@ -124,7 +150,7 @@ export default function App() {
           </button>
           <button 
             onClick={() => setFontSize(prev => Math.max(prev - 2, 14))}
-            className="p-4 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border-t border-slate-100 dark:border-slate-700 flex flex-col items-center"
+            className="p-4 text-hyundai-blue hover:bg-slate-100 transition-all border-t border-slate-100 flex flex-col items-center"
             title="글씨 작게"
           >
             <Type className="w-5 h-5" />
@@ -147,14 +173,14 @@ export default function App() {
           )}
           <button 
             onClick={() => setScreen('DASHBOARD')}
-            className="flex items-center gap-2 bg-white dark:bg-slate-800 text-hyundai-blue dark:text-white px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-slate-800"
+            className="flex items-center gap-2 bg-white text-hyundai-blue px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-slate-200"
           >
             <LayoutDashboard className="w-5 h-5" />
             대시보드
           </button>
-          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-xl border border-slate-200">
             <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border-2 border-hyundai-blue" />
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{user.displayName}님</span>
+            <span className="text-sm font-bold text-slate-700">{userName || user.displayName}님</span>
             <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors">
               <LogOut className="w-4 h-4" />
             </button>
@@ -169,7 +195,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-screen flex flex-col items-center justify-center bg-hyundai-blue dark:bg-black text-white p-6 relative overflow-hidden"
+            className="h-screen flex flex-col items-center justify-center bg-hyundai-blue text-white p-6 relative overflow-hidden"
           >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -187,7 +213,7 @@ export default function App() {
                   {user ? (
                     <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full">
                       <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full" />
-                      <span className="text-sm font-medium">{user.displayName}님 환영합니다</span>
+                      <span className="text-sm font-medium">{userName || user.displayName}님 환영합니다</span>
                       <button onClick={signOut} className="text-white/50 hover:text-white transition-colors">
                         <LogOut className="w-4 h-4" />
                       </button>
@@ -228,12 +254,12 @@ export default function App() {
             className="p-8 max-w-6xl mx-auto"
           >
             <div className="mb-12 flex items-center gap-4">
-              <button onClick={() => setScreen('HOME')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                <ArrowLeft className="w-6 h-6 text-hyundai-blue dark:text-hyundai-light-blue" />
+              <button onClick={() => setScreen('HOME')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ArrowLeft className="w-6 h-6 text-hyundai-blue" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold text-hyundai-blue dark:text-white mb-2">대화 상대 선택 👥</h1>
-                <p className="text-slate-500 dark:text-slate-400">면담을 진행할 팀원의 페르소나를 선택해 주세요.</p>
+                <h1 className="text-3xl font-bold text-hyundai-blue mb-2">대화 상대 선택 👥</h1>
+                <p className="text-slate-500">면담을 진행할 팀원의 페르소나를 선택해 주세요.</p>
               </div>
             </div>
 
@@ -246,7 +272,7 @@ export default function App() {
               ) : (
                 ['영업', '서비스'].map(dept => (
                   <div key={dept} className="space-y-6">
-                    <h2 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <h2 className="text-xl font-bold text-hyundai-blue border-b border-slate-200 pb-2">
                       {dept === '영업' ? '영업 부문 💼' : '서비스 부문 🛠️'}
                     </h2>
                     <div className="grid gap-4">
@@ -254,7 +280,7 @@ export default function App() {
                         <button
                           key={p.id}
                           onClick={() => handlePersonaSelect(p)}
-                          className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue group relative overflow-hidden"
+                          className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue group relative overflow-hidden"
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
@@ -262,15 +288,15 @@ export default function App() {
                                 p.difficulty === '상' ? 'bg-red-100 text-red-600' : 
                                 p.difficulty === '중' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
                               }`}>난이도 {p.difficulty}</span>
-                              <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded">{p.mbti}</span>
+                              <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">{p.mbti}</span>
                             </div>
                             <span className="text-xs font-medium text-slate-400">{p.role}</span>
                           </div>
-                          <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-2">{p.name}</h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">{p.description}</p>
+                          <h3 className="font-bold text-xl text-slate-800 mb-2">{p.name}</h3>
+                          <p className="text-sm text-slate-500 mb-4 line-clamp-2">{p.description}</p>
                           <div className="flex flex-wrap gap-2">
                             {p.traits.map((t, i) => (
-                              <span key={i} className="text-[10px] bg-hyundai-blue/5 dark:bg-hyundai-light-blue/10 text-hyundai-blue dark:text-hyundai-light-blue px-2 py-1 rounded">#{t}</span>
+                              <span key={i} className="text-[10px] bg-hyundai-blue/5 text-hyundai-blue px-2 py-1 rounded">#{t}</span>
                             ))}
                           </div>
                         </button>
@@ -292,12 +318,12 @@ export default function App() {
             className="p-8 max-w-6xl mx-auto"
           >
             <div className="mb-12 flex items-center gap-4">
-              <button onClick={() => setScreen('PERSONA_SELECT')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                <ArrowLeft className="w-6 h-6 text-hyundai-blue dark:text-hyundai-light-blue" />
+              <button onClick={() => setScreen('PERSONA_SELECT')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ArrowLeft className="w-6 h-6 text-hyundai-blue" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold text-hyundai-blue dark:text-white mb-2">면담 상황 선택 📋</h1>
-                <p className="text-slate-500 dark:text-slate-400">진행할 면담의 카테고리와 구체적인 상황을 선택해 주세요.</p>
+                <h1 className="text-3xl font-bold text-hyundai-blue mb-2">면담 상황 선택 📋</h1>
+                <p className="text-slate-500">진행할 면담의 카테고리와 구체적인 상황을 선택해 주세요.</p>
               </div>
             </div>
 
@@ -309,7 +335,7 @@ export default function App() {
                   onClick={() => setActiveTab(cat)}
                   className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-all border-b-4 ${
                     activeTab === cat 
-                      ? 'border-hyundai-blue dark:border-hyundai-light-blue text-hyundai-blue dark:text-hyundai-light-blue' 
+                      ? 'border-hyundai-blue text-hyundai-blue' 
                       : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
@@ -329,19 +355,19 @@ export default function App() {
                   <button
                     key={s.id}
                     onClick={() => handleScenarioSelect(s)}
-                    className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue dark:hover:border-hyundai-light-blue flex flex-col h-full"
+                    className="text-left p-6 glass-card border-2 border-transparent hover:border-hyundai-blue flex flex-col h-full"
                   >
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-3">{s.title}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 flex-1">{s.description}</p>
+                    <h3 className="font-bold text-lg text-slate-800 mb-3">{s.title}</h3>
+                    <p className="text-sm text-slate-500 mb-6 flex-1">{s.description}</p>
                     
-                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
                       <div>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-hyundai-blue dark:text-hyundai-light-blue uppercase mb-1">
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-hyundai-blue uppercase mb-1">
                           <Target className="w-3 h-3" /> Goals
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {s.goals.map((g, i) => (
-                            <span key={i} className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{g}</span>
+                            <span key={i} className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{g}</span>
                           ))}
                         </div>
                       </div>
@@ -349,7 +375,7 @@ export default function App() {
                         <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase mb-1">
                           <Info className="w-3 h-3" /> Guide
                         </div>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400 italic leading-tight">{s.guide}</p>
+                        <p className="text-[11px] text-slate-600 italic leading-tight">{s.guide}</p>
                       </div>
                     </div>
                   </button>
@@ -381,7 +407,49 @@ export default function App() {
           <DashboardScreen onBack={() => setScreen('HOME')} />
         )}
         {screen === 'ADMIN' && (
-          <AdminScreen onClose={() => setScreen('HOME')} />
+          <AdminScreen 
+            onClose={() => setScreen('HOME')} 
+            personas={personas}
+            scenarios={scenarios}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Name Input Popup */}
+      <AnimatePresence>
+        {showNamePopup && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center"
+            >
+              <div className="w-20 h-20 bg-hyundai-blue/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="w-10 h-10 text-hyundai-blue" />
+              </div>
+              <h2 className="text-2xl font-black text-hyundai-blue mb-2">사용자 정보 입력</h2>
+              <p className="text-slate-500 mb-8 text-sm">시뮬레이션 리포트에 표시될<br />성함을 입력해 주세요.</p>
+              
+              <div className="space-y-4">
+                <input 
+                  type="text" 
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  placeholder="성함을 입력하세요"
+                  className="w-full px-6 py-4 rounded-xl border-2 border-slate-100 focus:border-hyundai-blue outline-none transition-all text-center text-lg font-bold"
+                  autoFocus
+                  onKeyPress={(e) => e.key === 'Enter' && handleSaveName()}
+                />
+                <button 
+                  onClick={handleSaveName}
+                  disabled={!tempName.trim()}
+                  className="hyundai-btn-primary w-full py-4 text-lg rounded-xl disabled:opacity-50"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

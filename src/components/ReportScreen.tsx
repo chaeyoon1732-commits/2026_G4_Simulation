@@ -67,16 +67,16 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="mb-6"
         >
-          <RefreshCcw className="w-12 h-12 text-hyundai-blue dark:text-hyundai-light-blue" />
+          <RefreshCcw className="w-12 h-12 text-hyundai-blue" />
         </motion.div>
-        <h2 className="text-2xl font-bold text-hyundai-blue dark:text-white mb-2">AI 면담 분석 중... 🧠</h2>
-        <p className="text-slate-500 dark:text-slate-400">대화 내용을 바탕으로 상세 리포트를 생성하고 있습니다.</p>
+        <h2 className="text-2xl font-bold text-hyundai-blue mb-2">AI 면담 분석 중... 🧠</h2>
+        <p className="text-slate-500">대화 내용을 바탕으로 상세 리포트를 생성하고 있습니다.</p>
       </div>
     );
   }
@@ -96,23 +96,23 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
   }));
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 font-hyundai transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 p-8 font-hyundai transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
           <div>
-            <h1 className="text-4xl font-black text-hyundai-blue dark:text-white mb-2">면담 시뮬레이션 결과 리포트 📊</h1>
-            <p className="text-slate-500 dark:text-slate-400">
+            <h1 className="text-4xl font-black text-hyundai-blue mb-2">면담 시뮬레이션 결과 리포트 📊</h1>
+            <p className="text-slate-500">
               {persona.name} {persona.role} | {scenario.title}
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all">
+            <button className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2 rounded-sm border border-slate-200 hover:bg-slate-50 transition-all">
               <Download className="w-4 h-4" /> PDF 저장
             </button>
             <button 
               onClick={onRestart}
-              className="flex items-center gap-2 bg-hyundai-blue dark:bg-hyundai-light-blue text-white px-6 py-2 rounded-sm hover:opacity-90 transition-all shadow-lg"
+              className="flex items-center gap-2 bg-hyundai-blue text-white px-6 py-2 rounded-sm hover:opacity-90 transition-all shadow-lg"
             >
               <RefreshCcw className="w-4 h-4" /> 다시 시작하기
             </button>
@@ -123,50 +123,50 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4">
-              <Trophy className="w-12 h-12 text-hyundai-blue/10 dark:text-hyundai-light-blue/20" />
+              <Trophy className="w-12 h-12 text-hyundai-blue/10" />
             </div>
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Overall Score</h3>
             <div className="relative mb-4">
               <svg className="w-32 h-32">
-                <circle className="text-slate-100 dark:text-slate-800" strokeWidth="8" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64" />
-                <circle className="text-hyundai-blue dark:text-hyundai-light-blue" strokeWidth="8" strokeDasharray={364.4} strokeDashoffset={364.4 - (364.4 * analysis.finalScore) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64" />
+                <circle className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64" />
+                <circle className="text-hyundai-blue" strokeWidth="8" strokeDasharray={364.4} strokeDashoffset={364.4 - (364.4 * analysis.finalScore) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64" />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-hyundai-blue dark:text-white">{analysis.finalScore}</span>
+                <span className="text-4xl font-black text-hyundai-blue">{analysis.finalScore}</span>
                 <span className="text-xs font-bold text-slate-400">/ 100</span>
               </div>
             </div>
-            <div className="text-6xl font-black text-hyundai-blue dark:text-hyundai-light-blue mb-2">{analysis.grade}</div>
+            <div className="text-6xl font-black text-hyundai-blue mb-2">{analysis.grade}</div>
             <p className="text-sm font-bold text-slate-500">종합 등급</p>
           </div>
 
           <div className="lg:col-span-2 glass-card p-8 rounded-2xl border-l-8 border-hyundai-blue">
             <div className="flex justify-between items-start mb-6">
-              <h3 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue flex items-center gap-2">
+              <h3 className="text-xl font-bold text-hyundai-blue flex items-center gap-2">
                 <CheckCircle2 className="w-6 h-6" /> 종합 총평 (Overall Assessment)
               </h3>
               <div className="bg-hyundai-gold/10 text-hyundai-gold px-4 py-1 rounded-full text-xs font-black">
                 {analysis.coachingStyle}
               </div>
             </div>
-            <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed mb-6">
+            <p className="text-lg text-slate-700 leading-relaxed mb-6">
               {analysis.summary}
             </p>
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+              <div className="bg-slate-50 p-4 rounded-xl">
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">발화 비중</div>
-                <div className="text-xl font-black text-hyundai-blue dark:text-hyundai-light-blue">{analysis.quantitative.speechRatio}%</div>
+                <div className="text-xl font-black text-hyundai-blue">{analysis.quantitative.speechRatio}%</div>
                 <div className="text-[10px] text-slate-500">리더 발화량</div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+              <div className="bg-slate-50 p-4 rounded-xl">
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">핵심 키워드</div>
                 <div className="flex flex-wrap gap-1">
                   {analysis.quantitative.keywords.map((k: string, i: number) => (
-                    <span key={i} className="text-[10px] font-bold text-hyundai-blue dark:text-hyundai-light-blue">#{k}</span>
+                    <span key={i} className="text-[10px] font-bold text-hyundai-blue">#{k}</span>
                   ))}
                 </div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+              <div className="bg-slate-50 p-4 rounded-xl">
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">목표 달성</div>
                 <div className="text-xl font-black text-emerald-600">{history[history.length-1]?.metadata?.goalsAchieved?.length || 0} / {scenario.goals.length}</div>
                 <div className="text-[10px] text-slate-500">체크리스트 완료</div>
@@ -179,7 +179,7 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Quantitative Analysis */}
           <div className="glass-card p-8 rounded-2xl">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-hyundai-blue" /> 정량적 분석 (Quantitative)
             </h3>
             <div className="h-64">
@@ -211,26 +211,26 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
           {/* Psychological & Leadership */}
           <div className="space-y-8">
             <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <Brain className="w-4 h-4 text-purple-500" /> 팀원 심리 반응 분석
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.psychologicalResponse}
               </p>
             </div>
             <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-emerald-500" /> 리더십 스타일 진단
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.leadershipDiagnosis}
               </p>
             </div>
             <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <Target className="w-4 h-4 text-red-500" /> 팀원 니즈 파악 (Needs Identification)
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.teamMemberNeeds}
               </p>
             </div>
@@ -239,19 +239,19 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
 
         {/* Strengths & Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 p-8 rounded-2xl border border-emerald-100 dark:border-emerald-800">
-            <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
+          <div className="bg-emerald-50 p-8 rounded-2xl border border-emerald-100">
+            <h3 className="text-lg font-bold text-emerald-700 mb-4 flex items-center gap-2">
               <ShieldCheck className="w-6 h-6" /> 소통상의 강점 (Strengths)
             </h3>
-            <p className="text-sm text-emerald-800 dark:text-emerald-300 leading-relaxed">
+            <p className="text-sm text-emerald-800 leading-relaxed">
               {analysis.strengths}
             </p>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-8 rounded-2xl border border-amber-100 dark:border-amber-800">
-            <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+          <div className="bg-amber-50 p-8 rounded-2xl border border-amber-100">
+            <h3 className="text-lg font-bold text-amber-700 mb-4 flex items-center gap-2">
               <AlertCircle className="w-6 h-6" /> 개선 포인트 (Improvements)
             </h3>
-            <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
+            <p className="text-sm text-amber-800 leading-relaxed">
               {analysis.improvements}
             </p>
           </div>
@@ -259,31 +259,31 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
 
         {/* Actionable Insights */}
         <div className="glass-card p-8 rounded-2xl mb-8">
-          <h3 className="text-2xl font-bold text-hyundai-blue dark:text-hyundai-light-blue mb-8 flex items-center gap-3">
+          <h3 className="text-2xl font-bold text-hyundai-blue mb-8 flex items-center gap-3">
             <Zap className="w-8 h-8" /> 실전 가이드 및 액션 플랜 (Actionable Insights)
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="space-y-4">
-              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <h4 className="font-bold text-slate-800 flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-hyundai-light-blue" /> 추천 대화 예시
               </h4>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl italic text-sm text-slate-600 dark:text-slate-400 border-l-4 border-hyundai-light-blue">
+              <div className="bg-slate-50 p-4 rounded-xl italic text-sm text-slate-600 border-l-4 border-hyundai-light-blue">
                 "{analysis.recommendedDialogue}"
               </div>
             </div>
             <div className="space-y-4">
-              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <h4 className="font-bold text-slate-800 flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-amber-500" /> 리더십 행동 가이드
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.actionGuide}
               </p>
             </div>
             <div className="space-y-4">
-              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <h4 className="font-bold text-slate-800 flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-500" /> 리스크 관리 방안
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.riskManagement}
               </p>
             </div>
@@ -292,7 +292,7 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
 
         {/* Final CTA */}
         <div className="text-center py-12">
-          <p className="text-slate-500 dark:text-slate-400 mb-6">
+          <p className="text-slate-500 mb-6">
             이 결과는 Firebase에 저장되어 향후 실습 결과와 비교 분석할 수 있습니다.
           </p>
           <button

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, setDoc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { PERSONAS, SCENARIOS } from './constants';
 
@@ -222,10 +222,38 @@ export async function deleteScenario(id: string) {
 }
 
 /**
- * 관리자 여부를 확인하는 함수 (간단한 예시)
+ * 관리자 여부를 확인하는 함수
  */
 export function checkIsAdmin(email: string | null) {
-  // 실제 운영 시에는 Firestore의 admin 컬렉션이나 Custom Claims를 사용해야 합니다.
-  const adminEmails = ['chaeyoon1732@gmail.com']; // 사용자 이메일 추가
+  const adminEmails = ['chaeyoon1732@gmail.com', 'admin@hyundai.com']; // 관리자 이메일 목록
   return email ? adminEmails.includes(email) : false;
+}
+
+/**
+ * 사용자의 프로필 정보를 저장하거나 업데이트하는 함수
+ */
+export async function updateUserProfile(userId: string, data: any) {
+  try {
+    await setDoc(doc(db, 'users', userId), data, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return false;
+  }
+}
+
+/**
+ * 사용자의 프로필 정보를 가져오는 함수
+ */
+export async function getUserProfile(userId: string) {
+  try {
+    const docSnap = await getDoc(doc(db, 'users', userId));
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user profile:", error);
+    return null;
+  }
 }

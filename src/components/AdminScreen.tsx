@@ -2,54 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Database, BarChart3, Lock, ChevronRight, Plus, 
-  Trash2, Save, X, Settings, TrendingUp, Award, MessageSquare
+  Trash2, Save, X, Settings, TrendingUp, Award, MessageSquare, Download, FileText, Sparkles, Loader2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell 
 } from 'recharts';
+import * as XLSX from 'xlsx';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { 
-  getAllSimulationResults, updatePersona, updateScenario, 
+  db, getAllSimulationResults, updatePersona, updateScenario, 
   fetchPersonasFromFirestore, fetchScenariosFromFirestore 
 } from '../firebase';
 import { Persona, Scenario, Category } from '../constants';
+import ReportScreen from './ReportScreen';
+import { generateAIPersona, generateAIScenario, generatePersonaImage } from '../geminiService';
 
 interface Props {
   onClose: () => void;
+  personas: Persona[];
+  scenarios: Scenario[];
 }
 
-export default function AdminScreen({ onClose }: Props) {
+export default function AdminScreen({ onClose, personas, scenarios }: Props) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scenarios' | 'users'>('dashboard');
   const [results, setResults] = useState<any[]>([]);
-  const [personas, setPersonas] = useState<Persona[]>([]);
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedResultForReport, setSelectedResultForReport] = useState<any>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadData();
+      setLoading(true);
+      const q = query(collection(db, 'simulations'), orderBy('timestamp', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const res = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setResults(res);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error subscribing to results:", error);
+        setLoading(false);
+      });
+      return () => unsubscribe();
     }
   }, [isAuthenticated]);
 
-  async function loadData() {
-    setLoading(true);
-    const [res, pers, scen] = await Promise.all([
-      getAllSimulationResults(),
-      fetchPersonasFromFirestore(),
-      fetchScenariosFromFirestore()
-    ]);
-    setResults(res);
-    setPersonas(pers);
-    setScenarios(scen);
-    setLoading(false);
-  }
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'hyundai2026') { // 간단한 비밀번호
+    if (password === 'hyundai2026') {
       setIsAuthenticated(true);
     } else {
       alert('비밀번호가 틀렸습니다.');
@@ -62,7 +65,6 @@ export default function AdminScreen({ onClose }: Props) {
     if (success) {
       alert('페르소나가 저장되었습니다.');
       setEditingItem(null);
-      loadData();
     }
   };
 
@@ -72,7 +74,64 @@ export default function AdminScreen({ onClose }: Props) {
     if (success) {
       alert('시나리오가 저장되었습니다.');
       setEditingItem(null);
-      loadData();
+    }
+  };
+
+  const handleExportExcel = () => {
+    const exportData = results.map(r => ({
+      '학습자 이메일': r.userId,
+      '시나리오': r.scenarioId,
+      '페르소나': r.personaId,
+      '점수': r.score,
+      '등급': r.grade,
+      '날짜': r.timestamp?.toDate().toLocaleString() || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'LearningStatus');
+    XLSX.writeFile(wb, `H-Coaching_LearningStatus_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleGenerateAIPersona = async () => {
+    setIsGenerating(true);
+    try {
+      const dept = editingItem.department || '영업';
+      const aiPersona = await generateAIPersona(dept);
+      if (aiPersona) {
+        const imageUrl = await generatePersonaImage(aiPersona);
+        setEditingItem({
+          ...editingItem,
+          ...aiPersona,
+          imageUrl,
+          id: `pers-${Date.now()}`
+        });
+      }
+    } catch (error) {
+      console.error("Error generating AI persona:", error);
+      alert("AI 페르소나 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateAIScenario = async () => {
+    setIsGenerating(true);
+    try {
+      const category = editingItem.category || '영업';
+      const aiScenario = await generateAIScenario(category);
+      if (aiScenario) {
+        setEditingItem({
+          ...editingItem,
+          ...aiScenario,
+          id: `scen-${Date.now()}`
+        });
+      }
+    } catch (error) {
+      console.error("Error generating AI scenario:", error);
+      alert("AI 시나리오 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -128,7 +187,7 @@ export default function AdminScreen({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col font-hyundai">
       {/* Admin Header */}
-      <header className="bg-hyundai-blue dark:bg-black text-white px-8 py-4 flex items-center justify-between shadow-xl border-b dark:border-slate-800">
+      <header className="bg-hyundai-blue text-white px-8 py-4 flex items-center justify-between shadow-xl border-b">
         <div className="flex items-center gap-4">
           <Settings className="w-6 h-6 text-hyundai-gold" />
           <h1 className="text-xl font-black tracking-tight">H-Coaching Admin System</h1>
@@ -157,7 +216,7 @@ export default function AdminScreen({ onClose }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8 dark:bg-black">
+      <main className="flex-1 overflow-y-auto p-8">
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
             <motion.div 
@@ -234,7 +293,6 @@ export default function AdminScreen({ onClose }: Props) {
                         const { seedInitialData } = await import('../firebase');
                         await seedInitialData();
                         alert('데이터가 초기화되었습니다.');
-                        loadData();
                       }
                     }}
                     className="flex items-center gap-2 border border-hyundai-blue text-hyundai-blue px-4 py-2 rounded-lg text-sm font-bold hover:bg-hyundai-blue hover:text-white transition-all"
@@ -261,14 +319,19 @@ export default function AdminScreen({ onClose }: Props) {
                   <h3 className="font-black text-slate-400 uppercase text-xs tracking-widest">Personas</h3>
                   {personas.map(p => (
                     <div key={p.id} className="glass-card p-4 rounded-xl flex items-center justify-between group">
-                      <div>
-                        <div className="font-bold text-hyundai-blue dark:text-hyundai-light-blue">{p.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{p.role} | {p.department}</div>
+                      <div className="flex items-center gap-3">
+                        {p.imageUrl && (
+                          <img src={p.imageUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" referrerPolicy="no-referrer" />
+                        )}
+                        <div>
+                          <div className="font-bold text-hyundai-blue">{p.name}</div>
+                          <div className="text-xs text-slate-500">{p.role} | {p.department}</div>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <button 
                           onClick={() => setEditingItem({ ...p, type: 'persona' })}
-                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded-lg transition-all"
                         >
                           <Settings className="w-4 h-4 text-slate-400" />
                         </button>
@@ -277,10 +340,9 @@ export default function AdminScreen({ onClose }: Props) {
                             if (confirm(`'${p.name}' 페르소나를 삭제하시겠습니까?`)) {
                               const { deletePersona } = await import('../firebase');
                               await deletePersona(p.id);
-                              await loadData();
                             }
                           }}
-                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
                         >
                           <Trash2 className="w-4 h-4 text-red-400" />
                         </button>
@@ -293,13 +355,13 @@ export default function AdminScreen({ onClose }: Props) {
                   {scenarios.map(s => (
                     <div key={s.id} className="glass-card p-4 rounded-xl flex items-center justify-between group">
                       <div>
-                        <div className="font-bold text-hyundai-blue dark:text-hyundai-light-blue">{s.title}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{s.category}</div>
+                        <div className="font-bold text-hyundai-blue">{s.title}</div>
+                        <div className="text-xs text-slate-500">{s.category}</div>
                       </div>
                       <div className="flex gap-1">
                         <button 
                           onClick={() => setEditingItem({ ...s, type: 'scenario' })}
-                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded-lg transition-all"
                         >
                           <Settings className="w-4 h-4 text-slate-400" />
                         </button>
@@ -308,10 +370,9 @@ export default function AdminScreen({ onClose }: Props) {
                             if (confirm(`'${s.title}' 시나리오를 삭제하시겠습니까?`)) {
                               const { deleteScenario } = await import('../firebase');
                               await deleteScenario(s.id);
-                              await loadData();
                             }
                           }}
-                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
                         >
                           <Trash2 className="w-4 h-4 text-red-400" />
                         </button>
@@ -329,8 +390,17 @@ export default function AdminScreen({ onClose }: Props) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="max-w-7xl mx-auto"
+              className="max-w-7xl mx-auto space-y-4"
             >
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-black text-hyundai-blue">Learning Status</h2>
+                <button 
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg"
+                >
+                  <Download className="w-4 h-4" /> Excel 추출
+                </button>
+              </div>
               <div className="glass-card rounded-2xl overflow-hidden">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 border-b border-slate-200">
@@ -340,6 +410,7 @@ export default function AdminScreen({ onClose }: Props) {
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase">점수</th>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase">등급</th>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase">날짜</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase">리포트</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -365,6 +436,15 @@ export default function AdminScreen({ onClose }: Props) {
                         <td className="px-6 py-4 text-xs text-slate-400">
                           {r.timestamp?.toDate().toLocaleDateString()}
                         </td>
+                        <td className="px-6 py-4">
+                          <button 
+                            onClick={() => setSelectedResultForReport(r)}
+                            className="p-2 hover:bg-hyundai-blue/10 rounded-lg transition-all text-hyundai-blue"
+                            title="리포트 보기"
+                          >
+                            <FileText className="w-5 h-5" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -389,9 +469,20 @@ export default function AdminScreen({ onClose }: Props) {
                 <h3 className="text-xl font-black text-hyundai-blue">
                   {editingItem.type === 'persona' ? 'Persona Editor' : 'Scenario Editor'}
                 </h3>
-                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={editingItem.type === 'persona' ? handleGenerateAIPersona : handleGenerateAIScenario}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:scale-105 transition-all shadow-lg disabled:opacity-50"
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    AI 자동 생성
+                  </button>
+                  <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               <form onSubmit={editingItem.type === 'persona' ? handleSavePersona : handleSaveScenario} className="space-y-6 pb-8">
@@ -542,6 +633,30 @@ export default function AdminScreen({ onClose }: Props) {
                 </div>
               </form>
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {selectedResultForReport && (
+          <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex flex-col">
+            <div className="p-4 flex justify-end">
+              <button 
+                onClick={() => setSelectedResultForReport(null)}
+                className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-all"
+              >
+                <X className="w-8 h-8" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <ReportScreen 
+                history={selectedResultForReport.history}
+                persona={personas.find(p => p.id === selectedResultForReport.personaId) || personas[0]}
+                scenario={scenarios.find(s => s.id === selectedResultForReport.scenarioId) || scenarios[0]}
+                onRestart={() => setSelectedResultForReport(null)}
+              />
+            </div>
           </div>
         )}
       </AnimatePresence>

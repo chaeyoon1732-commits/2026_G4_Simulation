@@ -88,9 +88,9 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
   const progress = Math.min((userTurns / 10) * 100, 100);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="flex flex-col h-screen bg-slate-50 transition-colors duration-300">
       {/* Progress Bar */}
-      <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 z-20">
+      <div className="h-1.5 w-full bg-slate-200 z-20">
         <motion.div 
           className="h-full bg-hyundai-light-blue"
           initial={{ width: 0 }}
@@ -100,7 +100,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
       </div>
 
       {/* Header */}
-      <header className="bg-hyundai-blue dark:bg-slate-900 text-white p-4 flex items-center justify-between shadow-lg z-10">
+      <header className="bg-hyundai-blue text-white p-4 flex items-center justify-between shadow-lg z-10">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
@@ -134,12 +134,12 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
         {/* Left: Chat Area */}
         <div className="flex-1 flex flex-col glass-card overflow-hidden rounded-xl">
           {/* Mission Banner */}
-          <div className="bg-hyundai-light-blue/10 dark:bg-hyundai-light-blue/20 p-4 border-b border-hyundai-light-blue/20">
+          <div className="bg-hyundai-light-blue/10 p-4 border-b border-hyundai-light-blue/20">
             <div className="flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-hyundai-light-blue shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-xs font-bold text-hyundai-blue dark:text-hyundai-light-blue uppercase mb-1">당신의 미션 🎯</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <h4 className="text-xs font-bold text-hyundai-blue uppercase mb-1">당신의 미션 🎯</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
                   위의 상황과 팀원의 성향을 고려하여, 1:1 면담을 성공적으로 이끌어주세요. 
                   우측의 <b>'면담 목표'</b>를 달성하는 것이 이번 시뮬레이션의 핵심 과제입니다.
                 </p>
@@ -147,7 +147,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-white/30 dark:bg-slate-900/30">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-white/30">
             <AnimatePresence initial={false}>
               {messages.map((msg, idx) => (
                 <motion.div
@@ -165,7 +165,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
                     <div className={`p-4 rounded-2xl shadow-sm ${
                       msg.role === 'user' 
                         ? 'bg-hyundai-light-blue text-white rounded-tr-none' 
-                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-100 dark:border-slate-700'
+                        : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                     }`}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
@@ -176,7 +176,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
             {loading && (
               <div className="flex justify-start">
                 <div className="flex gap-3 items-center text-slate-400">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
                     <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                   <span className="text-xs font-medium">상대방이 답변을 작성 중입니다... ✍️</span>
@@ -186,7 +186,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+          <div className="p-4 border-t border-slate-100 bg-white/50">
             <div className="flex gap-3">
               <input
                 type="text"
@@ -194,12 +194,12 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="상대방의 마음을 여는 대화를 시작하세요..."
-                className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 focus:outline-none focus:border-hyundai-blue dark:focus:border-hyundai-light-blue transition-colors dark:text-white rounded-sm"
+                className="flex-1 bg-white border border-slate-200 px-4 py-3 focus:outline-none focus:border-hyundai-blue transition-colors rounded-sm"
               />
               <button
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
-                className="bg-hyundai-blue dark:bg-hyundai-light-blue text-white p-3 hover:bg-opacity-90 disabled:opacity-50 transition-all rounded-sm shadow-lg"
+                className="bg-hyundai-blue text-white p-3 hover:bg-opacity-90 disabled:opacity-50 transition-all rounded-sm shadow-lg"
               >
                 <Send className="w-6 h-6" />
               </button>
@@ -211,23 +211,28 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
         <div className="w-96 flex flex-col gap-6 overflow-y-auto pr-1">
           {/* Detailed Info Card */}
           <div className="glass-card p-5 rounded-xl border-l-4 border-hyundai-blue">
-            <h3 className="text-xs font-bold text-hyundai-blue dark:text-hyundai-light-blue mb-4 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-hyundai-blue mb-4 uppercase tracking-widest flex items-center gap-2">
               <Info className="w-4 h-4" /> 대상자 상세 정보
             </h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-2 rounded">
+              {persona.imageUrl && (
+                <div className="w-full h-48 rounded-lg overflow-hidden border border-slate-200 shadow-inner mb-4">
+                  <img src={persona.imageUrl} alt={persona.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+              <div className="flex justify-between items-center bg-slate-100 p-2 rounded">
                 <span className="text-[11px] font-bold text-slate-500">성향 (MBTI)</span>
-                <span className="text-xs font-bold text-hyundai-blue dark:text-hyundai-light-blue">{persona.mbti}</span>
+                <span className="text-xs font-bold text-hyundai-blue">{persona.mbti}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase">최근 이슈</span>
-                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-700 mt-1 leading-relaxed">
                   {persona.recentIssue}
                 </p>
               </div>
               <div className="flex flex-wrap gap-1">
                 {persona.traits.map((t, i) => (
-                  <span key={i} className="text-[10px] bg-hyundai-blue/5 dark:bg-hyundai-light-blue/10 text-hyundai-blue dark:text-hyundai-light-blue px-2 py-0.5 rounded">#{t}</span>
+                  <span key={i} className="text-[10px] bg-hyundai-blue/5 text-hyundai-blue px-2 py-0.5 rounded">#{t}</span>
                 ))}
               </div>
             </div>
@@ -246,7 +251,7 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
                 <h3 className="text-[10px] font-black text-hyundai-gold mb-2 uppercase tracking-widest flex items-center gap-2">
                   <Award className="w-3 h-3" /> One-point Lesson
                 </h3>
-                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                <p className="text-xs text-slate-700 font-medium leading-relaxed">
                   "{lastFeedback}"
                 </p>
               </motion.div>
@@ -256,18 +261,18 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
           <GoalChecklist allGoals={scenario.goals} achievedGoals={currentState.goalsAchieved} />
           
           <div className="glass-card p-5 rounded-xl">
-            <h3 className="text-xs font-bold text-hyundai-blue dark:text-hyundai-light-blue mb-4 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-hyundai-blue mb-4 uppercase tracking-widest flex items-center gap-2">
               <Target className="w-4 h-4" /> 면담 가이드
             </h3>
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 border-l-2 border-amber-400 rounded-r">
-                <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-relaxed italic">
+              <div className="bg-amber-50 p-3 border-l-2 border-amber-400 rounded-r">
+                <p className="text-[11px] text-amber-800 leading-relaxed italic">
                   "{scenario.guide}"
                 </p>
               </div>
               <div className="space-y-2">
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase">추천 화법</h4>
-                <ul className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-disc pl-4">
+                <ul className="text-[11px] text-slate-600 space-y-1 list-disc pl-4">
                   <li>"~에 대해 어떻게 생각하시나요?" (개방형 질문)</li>
                   <li>"그동안 고생 많으셨습니다." (공감과 인정)</li>
                   <li>"우리가 함께 해결할 수 있는 방법은 무엇일까요?" (협력적 제안)</li>
