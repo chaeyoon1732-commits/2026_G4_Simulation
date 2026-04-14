@@ -10,14 +10,21 @@ import { auth } from '../firebase';
 
 interface Props {
   onBack: () => void;
+  isDemoMode?: boolean;
+  demoSimulations?: any[];
 }
 
-export default function DashboardScreen({ onBack }: Props) {
+export default function DashboardScreen({ onBack, isDemoMode, demoSimulations }: Props) {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadHistory() {
+      if (isDemoMode && demoSimulations) {
+        setHistory(demoSimulations);
+        setLoading(false);
+        return;
+      }
       if (auth.currentUser) {
         const data = await getSimulationHistory(auth.currentUser.uid);
         setHistory(data);
@@ -25,7 +32,7 @@ export default function DashboardScreen({ onBack }: Props) {
       setLoading(false);
     }
     loadHistory();
-  }, []);
+  }, [isDemoMode, demoSimulations]);
 
   const stats = {
     total: history.length,

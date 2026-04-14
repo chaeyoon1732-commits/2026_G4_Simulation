@@ -6,7 +6,9 @@ import ReportScreen from './components/ReportScreen';
 import DashboardScreen from './components/DashboardScreen';
 import { ChatMessage } from './geminiService';
 import AdminScreen from './components/AdminScreen';
-import { auth, db, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult, checkIsAdmin, getUserProfile, updateUserProfile } from './firebase';
+import DemoBanner from './components/DemoBanner';
+import { generateInitialDemoData, DemoData } from './lib/demoData';
+import { auth, db, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult, checkIsAdmin, getUserProfile, updateUserProfile, saveSimulationResult } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { PERSONAS, SCENARIOS } from './constants';
@@ -35,11 +37,40 @@ export default function App() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  // Demo Mode State
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const isDemoModeRef = React.useRef(false);
+  const [demoRole, setDemoRole] = useState<'user' | 'admin'>('user');
+  const [demoData, setDemoData] = useState<DemoData | null>(null);
+
+  useEffect(() => {
+    isDemoModeRef.current = isDemoMode;
+    if (isDemoMode) {
+      const savedDemoData = localStorage.getItem('hyundai_demo_data');
+      if (savedDemoData) {
+        setDemoData(JSON.parse(savedDemoData));
+      } else {
+        const initialData = generateInitialDemoData();
+        setDemoData(initialData);
+        localStorage.setItem('hyundai_demo_data', JSON.stringify(initialData));
+      }
+    }
+  }, [isDemoMode]);
+
+  useEffect(() => {
+    if (isDemoMode && demoData) {
+      setPersonas(demoData.personas);
+      setScenarios(demoData.scenarios);
+      setLoadingData(false);
+    }
+  }, [isDemoMode, demoData]);
+
   useEffect(() => {
     // 한국어 주석: 리다이렉트 로그인 결과를 확인합니다.
     handleRedirectResult();
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
+      if (isDemoModeRef.current) return; // Ignore auth changes in demo mode
       setUser(u);
       if (u) {
         setIsAdmin(checkIsAdmin(u.email));
@@ -60,6 +91,7 @@ export default function App() {
 
     // Real-time listeners for personas and scenarios
     const unsubPersonas = onSnapshot(collection(db, '2026_G4_Simulation', 'personas', 'items'), (snapshot) => {
+      if (isDemoModeRef.current) return;
       const pData = snapshot.docs.map(doc => doc.data() as Persona);
       setPersonas(pData.length > 0 ? pData : PERSONAS);
       setLoadingData(false);
@@ -70,6 +102,7 @@ export default function App() {
     });
 
     const unsubScenarios = onSnapshot(collection(db, '2026_G4_Simulation', 'scenarios', 'items'), (snapshot) => {
+      if (isDemoModeRef.current) return;
       const sData = snapshot.docs.map(doc => doc.data() as Scenario);
       setScenarios(sData.length > 0 ? sData : SCENARIOS);
     }, (error) => {
@@ -89,6 +122,10 @@ export default function App() {
   }, [fontSize]);
 
   const handleStart = () => {
+    if (isDemoMode) {
+      setScreen('PERSONA_SELECT');
+      return;
+    }
     if (!user) {
       signIn();
     } else {
@@ -106,7 +143,7 @@ export default function App() {
     setScreen('SIMULATION');
   };
 
-  const handleFinish = (chatHistory: ChatMessage[]) => {
+  const handleFinish = async (chatHistory: ChatMessage[]) => {
     setHistory(chatHistory);
     setScreen('REPORT');
   };
@@ -120,6 +157,11 @@ export default function App() {
 
   const handleSaveName = async () => {
     if (!tempName.trim()) return;
+    if (isDemoMode) {
+      setUserName(tempName);
+      setShowNamePopup(false);
+      return;
+    }
     if (user) {
       const success = await updateUserProfile(user.uid, { 
         name: tempName,
@@ -135,8 +177,70 @@ export default function App() {
 
   const categories: Category[] = ['목표/평가', '인사통보', '직원케어', '성과관리'];
 
+  const startDemo = (role: 'user' | 'admin') => {
+    setIsDemoMode(true);
+    isDemoModeRef.current = true;
+    setDemoRole(role);
+    setUser({
+      uid: 'demo-user-id',
+      displayName: role === 'admin' ? '데모 관리자' : '데모 사용자',
+      email: role === 'admin' ? 'admin@example.com' : 'user@example.com',
+      photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
+    } as any);
+    setIsAdmin(role === 'admin');
+    setUserName(role === 'admin' ? '데모 관리자' : '데모 사용자');
+    setScreen('HOME');
+  };
+
+  const exitDemo = () => {
+    setIsDemoMode(false);
+    isDemoModeRef.current = false;
+    setDemoData(null);
+    setUser(null);
+    setIsAdmin(false);
+    setUserName('');
+    setScreen('HOME');
+    // Clear demo data from storage if you want it to be fresh next time, 
+    // but the requirement says "data safety" and "separate key", 
+    // so we keep it or clear it based on preference. 
+    // Let's clear it on exit to keep it clean.
+    localStorage.removeItem('hyundai_demo_data');
+  };
+
+  const resetDemoData = () => {
+    const freshData = generateInitialDemoData();
+    setDemoData(freshData);
+    localStorage.setItem('hyundai_demo_data', JSON.stringify(freshData));
+    alert('데모 데이터가 초기화되었습니다.');
+  };
+
+  const switchDemoRole = () => {
+    const newRole = demoRole === 'admin' ? 'user' : 'admin';
+    setDemoRole(newRole);
+    setIsAdmin(newRole === 'admin');
+    setUserName(newRole === 'admin' ? '데모 관리자' : '데모 사용자');
+    setUser(prev => prev ? {
+      ...prev,
+      displayName: newRole === 'admin' ? '데모 관리자' : '데모 사용자',
+      email: newRole === 'admin' ? 'admin@example.com' : 'user@example.com',
+    } as any : null);
+    
+    // If switching to admin from dashboard/simulation, go home or stay?
+    // Usually switching role should refresh the view.
+    if (screen === 'ADMIN' && newRole === 'user') setScreen('HOME');
+    if (screen === 'DASHBOARD' && newRole === 'user') setScreen('HOME');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-hyundai transition-colors duration-300">
+      {isDemoMode && (
+        <DemoBanner 
+          role={demoRole}
+          onSwitchRole={switchDemoRole}
+          onReset={resetDemoData}
+          onExit={exitDemo}
+        />
+      )}
       {/* Global Controls */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
         <div className="flex flex-col bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200">
@@ -161,7 +265,7 @@ export default function App() {
 
       {/* Top Navigation for Logged In Users */}
       {user && screen !== 'SIMULATION' && screen !== 'ADMIN' && (
-        <div className="fixed top-6 right-6 flex gap-3 z-50">
+        <div className={`fixed ${isDemoMode ? 'top-16' : 'top-6'} right-6 flex gap-3 z-50 transition-all duration-300`}>
           {isAdmin && (
             <button 
               onClick={() => setScreen('ADMIN')}
@@ -181,7 +285,10 @@ export default function App() {
           <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-xl border border-slate-200">
             <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border-2 border-hyundai-blue" />
             <span className="text-sm font-bold text-slate-700">{userName || user.displayName}님</span>
-            <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors">
+            <button 
+              onClick={isDemoMode ? exitDemo : signOut} 
+              className="text-slate-400 hover:text-red-500 transition-colors"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -195,7 +302,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-screen flex flex-col items-center justify-center bg-hyundai-blue text-white p-6 relative overflow-hidden"
+            className="min-h-screen flex flex-col items-center justify-center bg-hyundai-blue text-white p-6 relative overflow-hidden py-20"
           >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -214,7 +321,10 @@ export default function App() {
                     <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full">
                       <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full" />
                       <span className="text-sm font-medium">{userName || user.displayName}님 환영합니다</span>
-                      <button onClick={signOut} className="text-white/50 hover:text-white transition-colors">
+                      <button 
+                        onClick={isDemoMode ? exitDemo : signOut} 
+                        className="text-white/50 hover:text-white transition-colors"
+                      >
                         <LogOut className="w-4 h-4" />
                       </button>
                     </div>
@@ -235,11 +345,45 @@ export default function App() {
                 </p>
                 <button
                   onClick={handleStart}
-                  className="bg-white text-hyundai-blue px-12 py-5 text-xl font-bold hover:bg-slate-100 transition-all flex items-center gap-3 mx-auto group shadow-2xl"
+                  className="bg-white text-hyundai-blue px-12 py-5 text-xl font-bold hover:bg-slate-100 transition-all flex items-center gap-3 mx-auto group shadow-2xl mb-12"
                 >
                   {user ? '시뮬레이션 시작하기' : 'Google로 로그인하여 시작'}
                   <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </button>
+
+                {!isDemoMode && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="pt-8 border-t border-white/20"
+                  >
+                    <p className="text-sm font-bold text-hyundai-light-blue mb-6 uppercase tracking-widest">체험 모드</p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                      <button 
+                        onClick={() => startDemo('user')}
+                        className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 px-8 py-4 rounded-xl transition-all group"
+                      >
+                        <Users className="w-5 h-5 text-hyundai-gold" />
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold text-white/50 uppercase">Experience</p>
+                          <p className="font-bold">사용자 모드 체험</p>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => startDemo('admin')}
+                        className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 px-8 py-4 rounded-xl transition-all group"
+                      >
+                        <ShieldCheck className="w-5 h-5 text-hyundai-gold" />
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold text-white/50 uppercase">Management</p>
+                          <p className="font-bold">관리자 모드 체험</p>
+                        </div>
+                      </button>
+                    </div>
+                    <p className="mt-6 text-xs text-white/40">로그인 없이 모든 기능을 즉시 확인해 볼 수 있습니다.</p>
+                  </motion.div>
+                )}
               </motion.div>
             </div>
           </motion.div>
@@ -400,17 +544,38 @@ export default function App() {
             persona={selectedPersona}
             scenario={selectedScenario}
             onRestart={handleRestart} 
+            isDemoMode={isDemoMode}
+            onSaveDemoResult={(result) => {
+              if (isDemoMode && demoData) {
+                const updatedData = {
+                  ...demoData,
+                  simulations: [result, ...demoData.simulations]
+                };
+                setDemoData(updatedData);
+                localStorage.setItem('hyundai_demo_data', JSON.stringify(updatedData));
+              }
+            }}
           />
         )}
 
         {screen === 'DASHBOARD' && (
-          <DashboardScreen onBack={() => setScreen('HOME')} />
+          <DashboardScreen 
+            onBack={() => setScreen('HOME')} 
+            isDemoMode={isDemoMode}
+            demoSimulations={demoData?.simulations}
+          />
         )}
         {screen === 'ADMIN' && (
           <AdminScreen 
             onClose={() => setScreen('HOME')} 
             personas={personas}
             scenarios={scenarios}
+            isDemoMode={isDemoMode}
+            demoData={demoData}
+            onUpdateDemoData={(newData) => {
+              setDemoData(newData);
+              localStorage.setItem('hyundai_demo_data', JSON.stringify(newData));
+            }}
           />
         )}
       </AnimatePresence>

@@ -19,9 +19,11 @@ interface Props {
   persona: Persona;
   scenario: Scenario;
   onRestart: () => void;
+  isDemoMode?: boolean;
+  onSaveDemoResult?: (result: any) => void;
 }
 
-export default function ReportScreen({ history, persona, scenario, onRestart }: Props) {
+export default function ReportScreen({ history, persona, scenario, onRestart, isDemoMode, onSaveDemoResult }: Props) {
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,24 +48,32 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
         const finalAnalysis = { ...result, finalScore, grade };
         setAnalysis(finalAnalysis);
 
-        // Save to Firebase
-        if (auth.currentUser) {
-          saveSimulationResult({
-            userId: auth.currentUser.email || auth.currentUser.uid,
-            personaId: persona.id,
-            scenarioId: scenario.id,
-            score: finalScore,
-            grade,
-            metrics: lastMetadata,
-            analysis: result,
-            history: history.map(h => ({ role: h.role, content: h.content }))
-          });
+        // Save Result
+        const resultToSave = {
+          userId: isDemoMode ? 'demo-user-id' : (auth.currentUser?.email || auth.currentUser?.uid),
+          userName: isDemoMode ? '데모 사용자' : (auth.currentUser?.displayName || '사용자'),
+          personaId: persona.id,
+          personaName: persona.name,
+          scenarioId: scenario.id,
+          scenarioTitle: scenario.title,
+          score: finalScore,
+          grade,
+          metrics: lastMetadata,
+          analysis: result,
+          history: history.map(h => ({ role: h.role, content: h.content })),
+          timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+        };
+
+        if (isDemoMode && onSaveDemoResult) {
+          onSaveDemoResult(resultToSave);
+        } else if (!isDemoMode && auth.currentUser) {
+          saveSimulationResult(resultToSave);
         }
       }
       setLoading(false);
     }
     getAnalysis();
-  }, [history, persona, scenario]);
+  }, [history, persona, scenario, isDemoMode]);
 
   if (loading) {
     return (

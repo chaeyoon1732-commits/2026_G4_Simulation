@@ -22,10 +22,13 @@ interface Props {
   onClose: () => void;
   personas: Persona[];
   scenarios: Scenario[];
+  isDemoMode?: boolean;
+  demoData?: any;
+  onUpdateDemoData?: (newData: any) => void;
 }
 
-export default function AdminScreen({ onClose, personas, scenarios }: Props) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export default function AdminScreen({ onClose, personas, scenarios, isDemoMode, demoData, onUpdateDemoData }: Props) {
+  const [isAuthenticated, setIsAuthenticated] = useState(isDemoMode || false);
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scenarios' | 'users'>('dashboard');
   const [results, setResults] = useState<any[]>([]);
@@ -36,6 +39,11 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
 
   useEffect(() => {
     if (isAuthenticated) {
+      if (isDemoMode && demoData) {
+        setResults(demoData.simulations);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const q = query(collection(db, 'simulations'), orderBy('timestamp', 'desc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -61,6 +69,16 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
 
   const handleSavePersona = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDemoMode && demoData && onUpdateDemoData) {
+      const updatedPersonas = demoData.personas.map((p: any) => p.id === editingItem.id ? editingItem : p);
+      if (!demoData.personas.find((p: any) => p.id === editingItem.id)) {
+        updatedPersonas.push(editingItem);
+      }
+      onUpdateDemoData({ ...demoData, personas: updatedPersonas });
+      alert('데모 페르소나가 저장되었습니다.');
+      setEditingItem(null);
+      return;
+    }
     const success = await updatePersona(editingItem);
     if (success) {
       alert('페르소나가 저장되었습니다.');
@@ -70,6 +88,16 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
 
   const handleSaveScenario = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDemoMode && demoData && onUpdateDemoData) {
+      const updatedScenarios = demoData.scenarios.map((s: any) => s.id === editingItem.id ? editingItem : s);
+      if (!demoData.scenarios.find((s: any) => s.id === editingItem.id)) {
+        updatedScenarios.push(editingItem);
+      }
+      onUpdateDemoData({ ...demoData, scenarios: updatedScenarios });
+      alert('데모 시나리오가 저장되었습니다.');
+      setEditingItem(null);
+      return;
+    }
     const success = await updateScenario(editingItem);
     if (success) {
       alert('시나리오가 저장되었습니다.');
@@ -289,6 +317,10 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
                 <div className="flex gap-2">
                   <button 
                     onClick={async () => {
+                      if (isDemoMode) {
+                        alert('데모 모드에서는 초기화 기능을 사용할 수 없습니다. 상단 배너의 초기화 버튼을 이용해 주세요.');
+                        return;
+                      }
                       if (confirm('모든 페르소나와 시나리오를 기본 데이터로 초기화하시겠습니까? (기존 데이터 덮어쓰기)')) {
                         const { seedInitialData } = await import('../firebase');
                         await seedInitialData();
@@ -337,6 +369,13 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
                         </button>
                         <button 
                           onClick={async () => {
+                            if (isDemoMode && demoData && onUpdateDemoData) {
+                              if (confirm(`'${p.name}' 데모 페르소나를 삭제하시겠습니까?`)) {
+                                const updatedPersonas = demoData.personas.filter((pers: any) => pers.id !== p.id);
+                                onUpdateDemoData({ ...demoData, personas: updatedPersonas });
+                              }
+                              return;
+                            }
                             if (confirm(`'${p.name}' 페르소나를 삭제하시겠습니까?`)) {
                               const { deletePersona } = await import('../firebase');
                               await deletePersona(p.id);
@@ -367,6 +406,13 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
                         </button>
                         <button 
                           onClick={async () => {
+                            if (isDemoMode && demoData && onUpdateDemoData) {
+                              if (confirm(`'${s.title}' 데모 시나리오를 삭제하시겠습니까?`)) {
+                                const updatedScenarios = demoData.scenarios.filter((scen: any) => scen.id !== s.id);
+                                onUpdateDemoData({ ...demoData, scenarios: updatedScenarios });
+                              }
+                              return;
+                            }
                             if (confirm(`'${s.title}' 시나리오를 삭제하시겠습니까?`)) {
                               const { deleteScenario } = await import('../firebase');
                               await deleteScenario(s.id);
@@ -655,6 +701,7 @@ export default function AdminScreen({ onClose, personas, scenarios }: Props) {
                 persona={personas.find(p => p.id === selectedResultForReport.personaId) || personas[0]}
                 scenario={scenarios.find(s => s.id === selectedResultForReport.scenarioId) || scenarios[0]}
                 onRestart={() => setSelectedResultForReport(null)}
+                isDemoMode={isDemoMode}
               />
             </div>
           </div>
