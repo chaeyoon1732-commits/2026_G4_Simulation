@@ -229,13 +229,26 @@ export default function AdminScreen({ onClose }: Props) {
                 <h2 className="text-2xl font-black text-hyundai-blue">Scenario Builder</h2>
                 <div className="flex gap-2">
                   <button 
+                    onClick={async () => {
+                      if (confirm('모든 페르소나와 시나리오를 기본 데이터로 초기화하시겠습니까? (기존 데이터 덮어쓰기)')) {
+                        const { seedInitialData } = await import('../firebase');
+                        await seedInitialData();
+                        alert('데이터가 초기화되었습니다.');
+                        loadData();
+                      }
+                    }}
+                    className="flex items-center gap-2 border border-hyundai-blue text-hyundai-blue px-4 py-2 rounded-lg text-sm font-bold hover:bg-hyundai-blue hover:text-white transition-all"
+                  >
+                    <Database className="w-4 h-4" /> 기본 데이터로 초기화
+                  </button>
+                  <button 
                     onClick={() => setEditingItem({ id: `pers-${Date.now()}`, name: '', role: '', department: '영업', description: '', traits: [], mbti: '', difficulty: '중', recentIssue: '', type: 'persona' })}
                     className="flex items-center gap-2 bg-hyundai-blue text-white px-4 py-2 rounded-lg text-sm font-bold"
                   >
                     <Plus className="w-4 h-4" /> 페르소나 추가
                   </button>
                   <button 
-                    onClick={() => setEditingItem({ id: `scen-${Date.now()}`, category: '성과관리', title: '', description: '', guide: '', goals: [], type: 'scenario' })}
+                    onClick={() => setEditingItem({ id: `scen-${Date.now()}`, category: '영업', title: '', description: '', guide: '', goals: [], type: 'scenario' })}
                     className="flex items-center gap-2 bg-hyundai-gold text-white px-4 py-2 rounded-lg text-sm font-bold"
                   >
                     <Plus className="w-4 h-4" /> 시나리오 추가
@@ -353,7 +366,7 @@ export default function AdminScreen({ onClose }: Props) {
                 </button>
               </div>
 
-              <form onSubmit={editingItem.type === 'persona' ? handleSavePersona : handleSaveScenario} className="space-y-6">
+              <form onSubmit={editingItem.type === 'persona' ? handleSavePersona : handleSaveScenario} className="space-y-6 pb-8">
                 {editingItem.type === 'persona' ? (
                   <>
                     <div className="grid grid-cols-2 gap-4">
@@ -366,7 +379,7 @@ export default function AdminScreen({ onClose }: Props) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase">직함</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase">직함 (Title)</label>
                         <input 
                           value={editingItem.role} 
                           onChange={e => setEditingItem({...editingItem, role: e.target.value})}
@@ -374,31 +387,115 @@ export default function AdminScreen({ onClose }: Props) {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">부문 (Category)</label>
+                        <select 
+                          value={editingItem.department} 
+                          onChange={e => setEditingItem({...editingItem, department: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        >
+                          <option value="영업">영업</option>
+                          <option value="서비스">서비스</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">난이도</label>
+                        <select 
+                          value={editingItem.difficulty} 
+                          onChange={e => setEditingItem({...editingItem, difficulty: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        >
+                          <option value="하">하</option>
+                          <option value="중">중</option>
+                          <option value="상">상</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">MBTI</label>
+                        <input 
+                          value={editingItem.mbti} 
+                          onChange={e => setEditingItem({...editingItem, mbti: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase">설명</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase">설명 (Persona Script)</label>
                       <textarea 
                         value={editingItem.description} 
                         onChange={e => setEditingItem({...editingItem, description: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-slate-200 h-24"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">최근 이슈</label>
+                      <input 
+                        value={editingItem.recentIssue} 
+                        onChange={e => setEditingItem({...editingItem, recentIssue: e.target.value})}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">특징 (쉼표로 구분)</label>
+                      <input 
+                        value={editingItem.traits?.join(', ')} 
+                        onChange={e => setEditingItem({...editingItem, traits: e.target.value.split(',').map((t: string) => t.trim())})}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        placeholder="예: 자부심, 보수적, 변화 거부"
                       />
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase">제목</label>
-                      <input 
-                        value={editingItem.title} 
-                        onChange={e => setEditingItem({...editingItem, title: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-slate-200"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">카테고리</label>
+                        <select 
+                          value={editingItem.category} 
+                          onChange={e => setEditingItem({...editingItem, category: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        >
+                          <option value="영업">영업</option>
+                          <option value="서비스">서비스</option>
+                          <option value="목표/평가">목표/평가</option>
+                          <option value="인사통보">인사통보</option>
+                          <option value="직원케어">직원케어</option>
+                          <option value="성과관리">성과관리</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">제목</label>
+                        <input 
+                          value={editingItem.title} 
+                          onChange={e => setEditingItem({...editingItem, title: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase">설명</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase">상황 설명</label>
                       <textarea 
                         value={editingItem.description} 
                         onChange={e => setEditingItem({...editingItem, description: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-slate-200 h-24"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">코칭 가이드</label>
+                      <textarea 
+                        value={editingItem.guide} 
+                        onChange={e => setEditingItem({...editingItem, guide: e.target.value})}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 h-24"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">면담 목표 (쉼표로 구분)</label>
+                      <input 
+                        value={editingItem.goals?.join(', ')} 
+                        onChange={e => setEditingItem({...editingItem, goals: e.target.value.split(',').map((g: string) => g.trim())})}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200"
+                        placeholder="예: 목표 합의, 실행 방안 도출"
                       />
                     </div>
                   </>
