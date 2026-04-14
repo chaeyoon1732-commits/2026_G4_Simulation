@@ -141,3 +141,55 @@ export async function fetchScenariosFromFirestore() {
     return SCENARIOS;
   }
 }
+
+/**
+ * 모든 사용자의 시뮬레이션 결과를 가져오는 함수 (관리자용)
+ */
+export async function getAllSimulationResults() {
+  try {
+    const q = query(
+      collection(db, 'simulations'),
+      orderBy('timestamp', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Error getting all simulation results:", error);
+    return [];
+  }
+}
+
+/**
+ * 페르소나 정보를 업데이트하거나 생성하는 함수 (관리자용)
+ */
+export async function updatePersona(persona: any) {
+  try {
+    await setDoc(doc(db, '2026_G4_Simulation', 'personas', 'items', persona.id), persona);
+    return true;
+  } catch (error) {
+    console.error("Error updating persona:", error);
+    return false;
+  }
+}
+
+/**
+ * 시나리오 정보를 업데이트하거나 생성하는 함수 (관리자용)
+ */
+export async function updateScenario(scenario: any) {
+  try {
+    await setDoc(doc(db, '2026_G4_Simulation', 'scenarios', 'items', scenario.id), scenario);
+    return true;
+  } catch (error) {
+    console.error("Error updating scenario:", error);
+    return false;
+  }
+}
+
+/**
+ * 관리자 여부를 확인하는 함수 (간단한 예시)
+ */
+export function checkIsAdmin(email: string | null) {
+  // 실제 운영 시에는 Firestore의 admin 컬렉션이나 Custom Claims를 사용해야 합니다.
+  const adminEmails = ['chaeyoon1732@gmail.com']; // 사용자 이메일 추가
+  return email ? adminEmails.includes(email) : false;
+}

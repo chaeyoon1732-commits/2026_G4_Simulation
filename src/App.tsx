@@ -5,14 +5,15 @@ import SimulationScreen from './components/SimulationScreen';
 import ReportScreen from './components/ReportScreen';
 import DashboardScreen from './components/DashboardScreen';
 import { ChatMessage } from './geminiService';
-import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult } from './firebase';
+import AdminScreen from './components/AdminScreen';
+import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult, checkIsAdmin } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
   ChevronRight, Users, MessageSquare, ShieldCheck, HeartHandshake, 
-  ArrowLeft, Sun, Moon, Type, LogOut, LogIn, Star, Target, Info, LayoutDashboard
+  ArrowLeft, Sun, Moon, Type, LogOut, LogIn, Star, Target, Info, LayoutDashboard, Settings
 } from 'lucide-react';
 
-type Screen = 'HOME' | 'PERSONA_SELECT' | 'SCENARIO_SELECT' | 'SIMULATION' | 'REPORT' | 'DASHBOARD';
+type Screen = 'HOME' | 'PERSONA_SELECT' | 'SCENARIO_SELECT' | 'SIMULATION' | 'REPORT' | 'DASHBOARD' | 'ADMIN';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('HOME');
@@ -22,6 +23,7 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(18); // Increased default
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<Category>('목표/평가');
   
   // Firestore에서 가져온 데이터를 저장할 상태
@@ -36,6 +38,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
+        setIsAdmin(checkIsAdmin(u.email));
         // 1. 사용자가 로그인하면 초기 데이터를 Firestore에 시드(seed)합니다.
         // 한국어 주석: 앱 실행 시 한 번만 실행되도록 설계할 수도 있지만, 여기서는 로그인 시 확인합니다.
         await seedInitialData();
@@ -46,6 +49,8 @@ export default function App() {
         setPersonas(pData);
         setScenarios(sData);
         setLoadingData(false);
+      } else {
+        setIsAdmin(false);
       }
     });
     return () => unsubscribe();
@@ -129,16 +134,25 @@ export default function App() {
       </div>
 
       {/* Top Navigation for Logged In Users */}
-      {user && screen !== 'SIMULATION' && (
+      {user && screen !== 'SIMULATION' && screen !== 'ADMIN' && (
         <div className="fixed top-6 right-6 flex gap-3 z-50">
+          {isAdmin && (
+            <button 
+              onClick={() => setScreen('ADMIN')}
+              className="flex items-center gap-2 bg-hyundai-blue text-white px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-white/10"
+            >
+              <Settings className="w-5 h-5 text-hyundai-gold" />
+              관리자 모드
+            </button>
+          )}
           <button 
             onClick={() => setScreen('DASHBOARD')}
-            className="flex items-center gap-2 bg-white dark:bg-slate-800 text-hyundai-blue dark:text-white px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-slate-700"
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 text-hyundai-blue dark:text-white px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-slate-800"
           >
             <LayoutDashboard className="w-5 h-5" />
             대시보드
           </button>
-          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-xl border border-slate-200 dark:border-slate-800">
             <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border-2 border-hyundai-blue" />
             <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{user.displayName}님</span>
             <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors">
@@ -365,6 +379,9 @@ export default function App() {
 
         {screen === 'DASHBOARD' && (
           <DashboardScreen onBack={() => setScreen('HOME')} />
+        )}
+        {screen === 'ADMIN' && (
+          <AdminScreen onClose={() => setScreen('HOME')} />
         )}
       </AnimatePresence>
     </div>

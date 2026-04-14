@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Send, User, Bot, Loader2, Clock, MessageCircle, Target, Info, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Send, User, Bot, Loader2, Clock, MessageCircle, Target, Info, ShieldCheck, Award } from 'lucide-react';
 import { Persona, Scenario } from '../constants';
 import { createChatSession, sendMessage, ChatMessage, SimulationState } from '../geminiService';
 import PsychologicalWidget from './PsychologicalWidget';
@@ -19,12 +19,13 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
   const [loading, setLoading] = useState(false);
   const [chatSession, setChatSession] = useState<any>(null);
   const [currentState, setCurrentState] = useState<SimulationState>({
-    trust: 50,
-    acceptance: 50,
-    stability: 50,
+    rapport: 50,
+    situation: 50,
+    solution: 50,
     engagement: 50,
     goalsAchieved: []
   });
+  const [lastFeedback, setLastFeedback] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(1200); // 20 minutes in seconds
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,7 +38,10 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
       setLoading(true);
       const response = await sendMessage(session, "안녕하세요. 면담을 시작해 주세요.");
       setMessages([{ role: 'model', content: response.content, metadata: response.metadata }]);
-      if (response.metadata) setCurrentState(response.metadata);
+      if (response.metadata) {
+        setCurrentState(response.metadata);
+        if (response.metadata.onePointLesson) setLastFeedback(response.metadata.onePointLesson);
+      }
       setLoading(false);
     }
     init();
@@ -66,7 +70,10 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
     setLoading(true);
     const response = await sendMessage(chatSession, userMsg);
     setMessages(prev => [...prev, { role: 'model', content: response.content, metadata: response.metadata }]);
-    if (response.metadata) setCurrentState(response.metadata);
+    if (response.metadata) {
+      setCurrentState(response.metadata);
+      if (response.metadata.onePointLesson) setLastFeedback(response.metadata.onePointLesson);
+    }
     setLoading(false);
   };
 
@@ -227,6 +234,24 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
           </div>
 
           <PsychologicalWidget state={currentState} />
+          
+          <AnimatePresence>
+            {lastFeedback && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                className="glass-card p-5 rounded-xl border-l-4 border-hyundai-gold bg-hyundai-gold/5"
+              >
+                <h3 className="text-[10px] font-black text-hyundai-gold mb-2 uppercase tracking-widest flex items-center gap-2">
+                  <Award className="w-3 h-3" /> One-point Lesson
+                </h3>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                  "{lastFeedback}"
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           <GoalChecklist allGoals={scenario.goals} achievedGoals={currentState.goalsAchieved} />
           

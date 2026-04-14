@@ -84,9 +84,9 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
   if (!analysis) return <div className="p-8 text-center">분석 결과를 불러오는 데 실패했습니다.</div>;
 
   const radarData = [
-    { subject: '신뢰도', A: history[history.length-1]?.metadata?.trust || 50, fullMark: 100 },
-    { subject: '수용성', A: history[history.length-1]?.metadata?.acceptance || 50, fullMark: 100 },
-    { subject: '안정성', A: history[history.length-1]?.metadata?.stability || 50, fullMark: 100 },
+    { subject: '라포 형성', A: history[history.length-1]?.metadata?.rapport || 50, fullMark: 100 },
+    { subject: '현상 파악', A: history[history.length-1]?.metadata?.situation || 50, fullMark: 100 },
+    { subject: '해결책 도출', A: history[history.length-1]?.metadata?.solution || 50, fullMark: 100 },
     { subject: '몰입도', A: history[history.length-1]?.metadata?.engagement || 50, fullMark: 100 },
   ];
 
@@ -141,9 +141,14 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
           </div>
 
           <div className="lg:col-span-2 glass-card p-8 rounded-2xl border-l-8 border-hyundai-blue">
-            <h3 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue mb-6 flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6" /> 종합 총평 (Overall Assessment)
-            </h3>
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-xl font-bold text-hyundai-blue dark:text-hyundai-light-blue flex items-center gap-2">
+                <CheckCircle2 className="w-6 h-6" /> 종합 총평 (Overall Assessment)
+              </h3>
+              <div className="bg-hyundai-gold/10 text-hyundai-gold px-4 py-1 rounded-full text-xs font-black">
+                {analysis.coachingStyle}
+              </div>
+            </div>
             <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed mb-6">
               {analysis.summary}
             </p>
@@ -178,7 +183,7 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
               <BarChart3 className="w-5 h-5 text-hyundai-blue" /> 정량적 분석 (Quantitative)
             </h3>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={50}>
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid stroke="#e2e8f0" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
@@ -190,7 +195,7 @@ export default function ReportScreen({ history, persona, scenario, onRestart }: 
             <div className="mt-8">
               <h4 className="text-xs font-bold text-slate-400 uppercase mb-4">심리적 안전감 변화 추이</h4>
               <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" debounce={50}>
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" hide />

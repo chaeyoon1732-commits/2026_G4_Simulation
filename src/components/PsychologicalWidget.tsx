@@ -9,36 +9,35 @@ interface Props {
 
 export default function PsychologicalWidget({ state }: Props) {
   const data = [
-    { subject: '신뢰도', A: state.trust },
-    { subject: '수용성', A: state.acceptance },
-    { subject: '안정감', A: state.stability },
-    { subject: '몰입도', A: state.engagement },
+    { subject: '라포 형성', A: state?.rapport ?? 50 },
+    { subject: '현상 파악', A: state?.situation ?? 50 },
+    { subject: '해결책 도출', A: state?.solution ?? 50 },
+    { subject: '몰입도', A: state?.engagement ?? 50 },
   ];
 
   return (
-    <div className="glass-card p-6 rounded-xl overflow-hidden flex flex-col items-center">
+    <div className="glass-card p-6 rounded-xl overflow-hidden flex flex-col items-center min-h-[400px]">
       <h3 className="text-[10px] font-black text-hyundai-blue dark:text-hyundai-light-blue mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
         <span className="w-2 h-2 bg-hyundai-gold rounded-full animate-pulse" />
-        실시간 심리 분석 (H-Radar)
+        실시간 코칭 지표 (H-Radar)
       </h3>
       
-      <div className="h-64 w-full relative">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%" debounce={50} key={`radar-${state?.rapport}-${state?.situation}`}>
           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
-            <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
+            <PolarGrid stroke="#cbd5e1" />
             <PolarAngleAxis 
               dataKey="subject" 
-              tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} 
+              tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} 
             />
-            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             <Radar
-              name="Persona State"
+              name="Coaching Metrics"
               dataKey="A"
               stroke="#002C5F"
               fill="#002C5F"
-              fillOpacity={0.4}
-              isAnimationActive={true}
-              animationDuration={1000}
+              fillOpacity={0.5}
+              isAnimationActive={false}
             />
           </RadarChart>
         </ResponsiveContainer>

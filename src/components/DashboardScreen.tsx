@@ -97,7 +97,7 @@ export default function DashboardScreen({ onBack }: Props) {
                 <LineChart className="w-5 h-5 text-hyundai-blue" /> 최근 성과 변화 추이
               </h3>
               <div className="h-80 w-full">
-                <ReResponsiveContainer width="100%" height="100%">
+                <ReResponsiveContainer width="100%" height="100%" debounce={50}>
                   <ReLineChart data={stats.recentTrend}>
                     <ReCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <ReXAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
