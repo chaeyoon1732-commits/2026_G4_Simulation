@@ -128,7 +128,7 @@ export default function AdminScreen({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col font-hyundai">
       {/* Admin Header */}
-      <header className="bg-hyundai-blue text-white px-8 py-4 flex items-center justify-between shadow-xl">
+      <header className="bg-hyundai-blue dark:bg-black text-white px-8 py-4 flex items-center justify-between shadow-xl border-b dark:border-slate-800">
         <div className="flex items-center gap-4">
           <Settings className="w-6 h-6 text-hyundai-gold" />
           <h1 className="text-xl font-black tracking-tight">H-Coaching Admin System</h1>
@@ -157,7 +157,7 @@ export default function AdminScreen({ onClose }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-8 dark:bg-black">
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
             <motion.div 
@@ -262,15 +262,29 @@ export default function AdminScreen({ onClose }: Props) {
                   {personas.map(p => (
                     <div key={p.id} className="glass-card p-4 rounded-xl flex items-center justify-between group">
                       <div>
-                        <div className="font-bold text-hyundai-blue">{p.name}</div>
-                        <div className="text-xs text-slate-500">{p.role} | {p.department}</div>
+                        <div className="font-bold text-hyundai-blue dark:text-hyundai-light-blue">{p.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{p.role} | {p.department}</div>
                       </div>
-                      <button 
-                        onClick={() => setEditingItem({ ...p, type: 'persona' })}
-                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded-lg transition-all"
-                      >
-                        <Settings className="w-4 h-4 text-slate-400" />
-                      </button>
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => setEditingItem({ ...p, type: 'persona' })}
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`'${p.name}' 페르소나를 삭제하시겠습니까?`)) {
+                              const { deletePersona } = await import('../firebase');
+                              await deletePersona(p.id);
+                              await loadData();
+                            }
+                          }}
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -279,15 +293,29 @@ export default function AdminScreen({ onClose }: Props) {
                   {scenarios.map(s => (
                     <div key={s.id} className="glass-card p-4 rounded-xl flex items-center justify-between group">
                       <div>
-                        <div className="font-bold text-hyundai-blue">{s.title}</div>
-                        <div className="text-xs text-slate-500">{s.category}</div>
+                        <div className="font-bold text-hyundai-blue dark:text-hyundai-light-blue">{s.title}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{s.category}</div>
                       </div>
-                      <button 
-                        onClick={() => setEditingItem({ ...s, type: 'scenario' })}
-                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded-lg transition-all"
-                      >
-                        <Settings className="w-4 h-4 text-slate-400" />
-                      </button>
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => setEditingItem({ ...s, type: 'scenario' })}
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`'${s.title}' 시나리오를 삭제하시겠습니까?`)) {
+                              const { deleteScenario } = await import('../firebase');
+                              await deleteScenario(s.id);
+                              await loadData();
+                            }
+                          }}
+                          className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

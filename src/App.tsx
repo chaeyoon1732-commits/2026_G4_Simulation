@@ -103,7 +103,7 @@ export default function App() {
   const categories: Category[] = ['목표/평가', '인사통보', '직원케어', '성과관리'];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-hyundai transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-black font-hyundai transition-colors duration-300">
       {/* Global Controls */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
         <button 
@@ -169,7 +169,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-screen flex flex-col items-center justify-center bg-hyundai-blue dark:bg-slate-950 text-white p-6 relative overflow-hidden"
+            className="h-screen flex flex-col items-center justify-center bg-hyundai-blue dark:bg-black text-white p-6 relative overflow-hidden"
           >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -199,7 +199,7 @@ export default function App() {
                     </button>
                   )}
                 </div>
-                <h2 className="text-hyundai-light-blue font-bold tracking-[0.3em] uppercase mb-4">Hyundai Motor Group</h2>
+                <h2 className="text-hyundai-light-blue font-bold tracking-[0.3em] uppercase mb-4">2026 국내사업인재육성팀</h2>
                 <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight">
                   현장 리더 AI ✨<br />면담 시뮬레이터
                 </h1>

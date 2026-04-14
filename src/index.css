@@ -24,7 +24,7 @@
   }
   
   .dark body {
-    @apply bg-slate-950 text-slate-100;
+    @apply bg-black text-slate-100;
   }
   
   /* Robust font scaling: use rem for everything */
@@ -40,7 +40,7 @@
   }
   
   .dark .glass-card {
-    @apply bg-slate-900/80 border-slate-800/50 shadow-2xl shadow-black/50;
+    @apply bg-slate-900/90 border-slate-700 shadow-2xl shadow-black;
   }
   
   .hyundai-btn-primary {

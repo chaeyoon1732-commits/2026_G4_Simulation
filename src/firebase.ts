@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { PERSONAS, SCENARIOS } from './constants';
 
@@ -95,9 +95,18 @@ export async function getSimulationHistory(userId: string) {
 /**
  * 2026_G4_Simulation 컬렉션에 데이터를 시드(seed)하는 함수
  * 앱 실행 시 초기 데이터를 Firestore에 자동으로 업로드합니다.
+ * (관리자만 실행 가능하도록 규칙이 설정되어 있으므로, 일반 사용자는 실패할 수 있습니다.)
  */
 export async function seedInitialData() {
   try {
+    // 이미 데이터가 있는지 확인하여 불필요한 쓰기 방지
+    const personasSnapshot = await getDocs(collection(db, '2026_G4_Simulation', 'personas', 'items'));
+    if (!personasSnapshot.empty) {
+      console.log("Data already exists in Firestore. Skipping seed.");
+      return;
+    }
+
+    console.log("Seeding initial data...");
     // 1. 페르소나 데이터 시드
     for (const persona of PERSONAS) {
       await setDoc(doc(db, '2026_G4_Simulation', 'personas', 'items', persona.id), persona);
@@ -110,7 +119,8 @@ export async function seedInitialData() {
     
     console.log("Initial data seeded to '2026_G4_Simulation' collection successfully.");
   } catch (error) {
-    console.error("Error seeding initial data:", error);
+    // 일반 사용자의 경우 권한 부족으로 실패하는 것이 정상이므로 경고만 출력
+    console.warn("Seed skipped or failed (likely due to permissions):", error);
   }
 }
 
@@ -181,6 +191,32 @@ export async function updateScenario(scenario: any) {
     return true;
   } catch (error) {
     console.error("Error updating scenario:", error);
+    return false;
+  }
+}
+
+/**
+ * 페르소나 정보를 삭제하는 함수 (관리자용)
+ */
+export async function deletePersona(id: string) {
+  try {
+    await deleteDoc(doc(db, '2026_G4_Simulation', 'personas', 'items', id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting persona:", error);
+    return false;
+  }
+}
+
+/**
+ * 시나리오 정보를 삭제하는 함수 (관리자용)
+ */
+export async function deleteScenario(id: string) {
+  try {
+    await deleteDoc(doc(db, '2026_G4_Simulation', 'scenarios', 'items', id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting scenario:", error);
     return false;
   }
 }
