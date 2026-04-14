@@ -33,8 +33,8 @@ export default function App() {
   const [tempName, setTempName] = useState('');
   
   // Firestore에서 가져온 데이터를 저장할 상태
-  const [personas, setPersonas] = useState<Persona[]>([]);
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>(PERSONAS);
+  const [scenarios, setScenarios] = useState<Scenario[]>(SCENARIOS);
   const [loadingData, setLoadingData] = useState(true);
 
   // Demo Mode State
@@ -47,23 +47,25 @@ export default function App() {
     isDemoModeRef.current = isDemoMode;
     if (isDemoMode) {
       const savedDemoData = localStorage.getItem('hyundai_demo_data');
+      let currentDemoData: DemoData;
       if (savedDemoData) {
-        setDemoData(JSON.parse(savedDemoData));
+        currentDemoData = JSON.parse(savedDemoData);
+        // Check if categories are outdated (old '영업'/'서비스' categories)
+        const hasOutdatedCategories = currentDemoData.scenarios.some(s => s.category === '영업' || s.category === '서비스');
+        if (hasOutdatedCategories) {
+          currentDemoData = generateInitialDemoData();
+          localStorage.setItem('hyundai_demo_data', JSON.stringify(currentDemoData));
+        }
       } else {
-        const initialData = generateInitialDemoData();
-        setDemoData(initialData);
-        localStorage.setItem('hyundai_demo_data', JSON.stringify(initialData));
+        currentDemoData = generateInitialDemoData();
+        localStorage.setItem('hyundai_demo_data', JSON.stringify(currentDemoData));
       }
-    }
-  }, [isDemoMode]);
-
-  useEffect(() => {
-    if (isDemoMode && demoData) {
-      setPersonas(demoData.personas);
-      setScenarios(demoData.scenarios);
+      setDemoData(currentDemoData);
+      setPersonas(currentDemoData.personas);
+      setScenarios(currentDemoData.scenarios);
       setLoadingData(false);
     }
-  }, [isDemoMode, demoData]);
+  }, [isDemoMode]);
 
   useEffect(() => {
     // 한국어 주석: 리다이렉트 로그인 결과를 확인합니다.
@@ -210,6 +212,8 @@ export default function App() {
   const resetDemoData = () => {
     const freshData = generateInitialDemoData();
     setDemoData(freshData);
+    setPersonas(freshData.personas);
+    setScenarios(freshData.scenarios);
     localStorage.setItem('hyundai_demo_data', JSON.stringify(freshData));
     alert('데모 데이터가 초기화되었습니다.');
   };
@@ -552,6 +556,8 @@ export default function App() {
                   simulations: [result, ...demoData.simulations]
                 };
                 setDemoData(updatedData);
+                setPersonas(updatedData.personas);
+                setScenarios(updatedData.scenarios);
                 localStorage.setItem('hyundai_demo_data', JSON.stringify(updatedData));
               }
             }}
@@ -574,6 +580,8 @@ export default function App() {
             demoData={demoData}
             onUpdateDemoData={(newData) => {
               setDemoData(newData);
+              setPersonas(newData.personas);
+              setScenarios(newData.scenarios);
               localStorage.setItem('hyundai_demo_data', JSON.stringify(newData));
             }}
           />
