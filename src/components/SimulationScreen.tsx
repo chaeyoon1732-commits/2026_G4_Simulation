@@ -77,10 +77,21 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
   };
 
   const userTurns = messages.filter(m => m.role === 'user').length;
-  const isFinishable = userTurns >= 5; // Reduced for testing, but instruction said 10 turns total (user+model)
+  const isFinishable = userTurns >= 5; 
+  const progress = Math.min((userTurns / 10) * 100, 100);
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      {/* Progress Bar */}
+      <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 z-20">
+        <motion.div 
+          className="h-full bg-hyundai-light-blue"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5 }}
+        />
+      </div>
+
       {/* Header */}
       <header className="bg-hyundai-blue dark:bg-slate-900 text-white p-4 flex items-center justify-between shadow-lg z-10">
         <div className="flex items-center gap-4">

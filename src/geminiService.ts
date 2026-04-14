@@ -67,7 +67,7 @@ export async function sendMessage(chat: any, message: string) {
 
 export async function generateReportAnalysis(history: ChatMessage[], persona: Persona, scenario: Scenario) {
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3-flash-preview",
     config: {
       systemInstruction: `
         당신은 현대자동차의 전문 HR 컨설턴트입니다. 
@@ -100,13 +100,15 @@ export async function generateReportAnalysis(history: ChatMessage[], persona: Pe
       `,
       responseMimeType: "application/json",
     },
-    contents: [{ role: "user", parts: [{ text: "위의 지침에 따라 면담 내용을 분석해 주세요." }] }]
+    contents: "위의 지침에 따라 면담 내용을 분석해 주세요."
   });
   
+  const text = response.text;
+  
   try {
-    return JSON.parse(response.text);
+    return JSON.parse(text);
   } catch (e) {
-    console.error("Failed to parse report analysis:", response.text);
+    console.error("Failed to parse report analysis:", text);
     return null;
   }
 }

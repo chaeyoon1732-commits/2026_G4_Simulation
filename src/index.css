@@ -3,62 +3,77 @@
 @theme {
   --color-hyundai-blue: #002C5F;
   --color-hyundai-light-blue: #0072C6;
-  --color-hyundai-sand: #E4DCD3;
-  --font-hyundai: "Hyundai Sans Head", "Inter", sans-serif;
+  --color-hyundai-gold: #A36B4F;
+  --color-hyundai-gray: #F6F3F2;
+  --font-hyundai: "Hyundai Sans KR", "Hyundai Sans Head", "Inter", sans-serif;
 }
 
 :root {
-  --app-font-size: 16px;
+  --app-font-size: 18px;
 }
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 font-hyundai transition-colors duration-300;
+  html {
     font-size: var(--app-font-size);
+    @apply transition-colors duration-300;
+  }
+  
+  body {
+    @apply bg-white text-slate-900 font-hyundai transition-colors duration-300;
+    line-height: 1.6;
   }
   
   .dark body {
     @apply bg-slate-950 text-slate-100;
   }
+  
+  /* Robust font scaling: use rem for everything */
+  h1 { @apply text-4xl font-black leading-tight; }
+  h2 { @apply text-2xl font-bold; }
+  h3 { @apply text-xl font-bold; }
+  p { @apply text-base; }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl transition-colors duration-300;
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl transition-all duration-300;
   }
   
   .dark .glass-card {
-    @apply bg-slate-900/70 border-slate-800/50;
+    @apply bg-slate-900/80 border-slate-800/50 shadow-2xl shadow-black/50;
   }
   
   .hyundai-btn-primary {
-    @apply bg-hyundai-blue text-white px-6 py-3 rounded-none hover:opacity-90 transition-all font-medium disabled:opacity-30;
+    @apply bg-hyundai-blue text-white px-8 py-4 rounded-sm hover:bg-hyundai-light-blue active:scale-95 transition-all font-bold disabled:opacity-30 shadow-lg;
   }
   
   .dark .hyundai-btn-primary {
-    @apply bg-hyundai-light-blue;
+    @apply bg-hyundai-light-blue hover:bg-blue-500;
   }
   
   .hyundai-btn-outline {
-    @apply border-2 border-hyundai-blue text-hyundai-blue px-6 py-3 rounded-none hover:bg-hyundai-blue hover:text-white transition-all font-medium;
+    @apply border-2 border-hyundai-blue text-hyundai-blue px-8 py-4 rounded-sm hover:bg-hyundai-blue hover:text-white active:scale-95 transition-all font-bold;
   }
   
   .dark .hyundai-btn-outline {
-    @apply border-hyundai-light-blue text-hyundai-light-blue hover:bg-hyundai-light-blue;
+    @apply border-hyundai-light-blue text-hyundai-light-blue hover:bg-hyundai-light-blue hover:text-white;
+  }
+
+  .hyundai-gold-accent {
+    @apply text-hyundai-gold border-hyundai-gold;
   }
 }
 
-/* Custom scrollbar for chat */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #002C5F44;
-  border-radius: 10px;
+  @apply bg-hyundai-blue/20 rounded-full hover:bg-hyundai-blue/40 transition-colors;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #002C5F66;
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-white/10 hover:bg-white/20;
 }

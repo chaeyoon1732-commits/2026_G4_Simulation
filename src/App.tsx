@@ -3,15 +3,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Persona, Scenario, Category } from './constants';
 import SimulationScreen from './components/SimulationScreen';
 import ReportScreen from './components/ReportScreen';
+import DashboardScreen from './components/DashboardScreen';
 import { ChatMessage } from './geminiService';
 import { auth, signIn, signOut, seedInitialData, fetchPersonasFromFirestore, fetchScenariosFromFirestore, handleRedirectResult } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
   ChevronRight, Users, MessageSquare, ShieldCheck, HeartHandshake, 
-  ArrowLeft, Sun, Moon, Type, LogOut, LogIn, Star, Target, Info
+  ArrowLeft, Sun, Moon, Type, LogOut, LogIn, Star, Target, Info, LayoutDashboard
 } from 'lucide-react';
 
-type Screen = 'HOME' | 'PERSONA_SELECT' | 'SCENARIO_SELECT' | 'SIMULATION' | 'REPORT';
+type Screen = 'HOME' | 'PERSONA_SELECT' | 'SCENARIO_SELECT' | 'SIMULATION' | 'REPORT' | 'DASHBOARD';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('HOME');
@@ -19,7 +20,7 @@ export default function App() {
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(18); // Increased default
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [activeTab, setActiveTab] = useState<Category>('목표/평가');
   
@@ -53,8 +54,10 @@ export default function App() {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
     }
   }, [isDarkMode]);
 
@@ -100,30 +103,50 @@ export default function App() {
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
         <button 
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className="p-3 bg-white dark:bg-slate-800 shadow-lg rounded-full text-hyundai-blue dark:text-hyundai-light-blue hover:scale-110 transition-all"
+          className="p-4 bg-white dark:bg-slate-800 shadow-2xl rounded-full text-hyundai-blue dark:text-hyundai-light-blue hover:scale-110 transition-all border border-slate-200 dark:border-slate-700"
           title="다크모드 전환"
         >
-          {isDarkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          {isDarkMode ? <Sun className="w-7 h-7" /> : <Moon className="w-7 h-7" />}
         </button>
-        <div className="flex flex-col bg-white dark:bg-slate-800 shadow-lg rounded-full overflow-hidden">
+        <div className="flex flex-col bg-white dark:bg-slate-800 shadow-2xl rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700">
           <button 
-            onClick={() => setFontSize(prev => Math.min(prev + 2, 24))}
-            className="p-3 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+            onClick={() => setFontSize(prev => Math.min(prev + 2, 32))}
+            className="p-4 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex flex-col items-center"
             title="글씨 크게"
           >
-            <Type className="w-6 h-6" />
-            <span className="text-[10px] font-bold">+</span>
+            <Type className="w-7 h-7" />
+            <span className="text-[10px] font-black mt-1">BIG</span>
           </button>
           <button 
-            onClick={() => setFontSize(prev => Math.max(prev - 2, 12))}
-            className="p-3 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border-t border-slate-100 dark:border-slate-700"
+            onClick={() => setFontSize(prev => Math.max(prev - 2, 14))}
+            className="p-4 text-hyundai-blue dark:text-hyundai-light-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border-t border-slate-100 dark:border-slate-700 flex flex-col items-center"
             title="글씨 작게"
           >
-            <Type className="w-4 h-4" />
-            <span className="text-[10px] font-bold">-</span>
+            <Type className="w-5 h-5" />
+            <span className="text-[10px] font-black mt-1">SMALL</span>
           </button>
         </div>
       </div>
+
+      {/* Top Navigation for Logged In Users */}
+      {user && screen !== 'SIMULATION' && (
+        <div className="fixed top-6 right-6 flex gap-3 z-50">
+          <button 
+            onClick={() => setScreen('DASHBOARD')}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 text-hyundai-blue dark:text-white px-5 py-2.5 rounded-full shadow-xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-slate-700"
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            대시보드
+          </button>
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-xl border border-slate-200 dark:border-slate-700">
+            <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border-2 border-hyundai-blue" />
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{user.displayName}님</span>
+            <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {screen === 'HOME' && (
@@ -338,6 +361,10 @@ export default function App() {
             scenario={selectedScenario}
             onRestart={handleRestart} 
           />
+        )}
+
+        {screen === 'DASHBOARD' && (
+          <DashboardScreen onBack={() => setScreen('HOME')} />
         )}
       </AnimatePresence>
     </div>
