@@ -11,7 +11,7 @@ import { saveSimulationResult, auth } from '../firebase';
 import { 
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, 
   PolarRadiusAxis, Radar, LineChart, Line, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend 
+  CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell 
 } from 'recharts';
 
 interface Props {
@@ -105,8 +105,21 @@ export default function ReportScreen({ history, persona, scenario, onRestart, is
     value: val
   }));
 
+  // Turn breakdown data
+  const turnBreakdown = [
+    { name: 'Leader (User)', value: history.filter(m => m.role === 'user').length },
+    { name: 'Member (AI)', value: history.filter(m => m.role === 'model').length },
+  ];
+  const COLORS = ['#002C5F', '#0072C6'];
+
+  // Goals Trend
+  const goalsTrend = history.map((m, i) => ({
+    turn: i + 1,
+    count: m.metadata?.goalsAchieved?.length || 0
+  }));
+
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-hyundai transition-colors duration-300">
+    <div className="report-screen min-h-screen bg-slate-50 p-8 font-hyundai transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
@@ -186,11 +199,11 @@ export default function ReportScreen({ history, persona, scenario, onRestart, is
         </div>
 
         {/* Analysis Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
           {/* Quantitative Analysis */}
-          <div className="glass-card p-8 rounded-2xl">
+          <div className="glass-card p-8 rounded-2xl lg:col-span-1">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-hyundai-blue" /> 정량적 분석 (Quantitative)
+              <BarChart3 className="w-5 h-5 text-hyundai-blue" /> 역량 밸런스 (Competency)
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%" debounce={50}>
@@ -202,31 +215,93 @@ export default function ReportScreen({ history, persona, scenario, onRestart, is
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-8">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-4">심리적 안전감 변화 추이</h4>
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" hide />
-                    <YAxis hide domain={[0, 100]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="value" stroke="#0072C6" strokeWidth={3} dot={{ r: 4, fill: '#0072C6' }} />
-                  </LineChart>
-                </ResponsiveContainer>
+          </div>
+
+          {/* Goal & Flow Analysis */}
+          <div className="glass-card p-8 rounded-2xl lg:col-span-2">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-hyundai-blue" /> 대화 흐름 분석 (Flow Analysis)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-4 text-center">심리적 안전감 변화</h4>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" hide />
+                      <YAxis hide domain={[0, 100]} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#0072C6" strokeWidth={3} dot={{ r: 4, fill: '#0072C6' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-4 text-center">목표 달성 추이</h4>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <LineChart data={goalsTrend}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="turn" stroke="#94a3b8" fontSize={10} />
+                      <YAxis stroke="#94a3b8" fontSize={10} domain={[0, scenario.goals.length]} allowDecimals={false} />
+                      <Tooltip />
+                      <Line type="stepAfter" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Psychological & Leadership */}
-          <div className="space-y-8">
-            <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Brain className="w-4 h-4 text-purple-500" /> 팀원 심리 반응 분석
-              </h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {analysis.psychologicalResponse}
-              </p>
+        {/* Breakdown & Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center">
+            <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-hyundai-light-blue" /> 발화수 분포 (Turns)
+            </h3>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={turnBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={60}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {turnBreakdown.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="glass-card p-6 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-purple-500" /> 팀원 심리 반응 분석
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {analysis.psychologicalResponse}
+                </p>
+              </div>
+              <div className="glass-card p-6 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-red-500" /> 팀원 니즈 파악
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {analysis.teamMemberNeeds}
+                </p>
+              </div>
             </div>
             <div className="glass-card p-6 rounded-2xl">
               <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -234,14 +309,6 @@ export default function ReportScreen({ history, persona, scenario, onRestart, is
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed">
                 {analysis.leadershipDiagnosis}
-              </p>
-            </div>
-            <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Target className="w-4 h-4 text-red-500" /> 팀원 니즈 파악 (Needs Identification)
-              </h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {analysis.teamMemberNeeds}
               </p>
             </div>
           </div>

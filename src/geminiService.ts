@@ -190,9 +190,5 @@ export async function generateAIScenario(category: string) {
 }
 
 export async function generatePersonaImage(persona: any) {
-  // AI 이미지 생성 API가 별도로 없으므로, Picsum이나 다른 서비스를 활용한 키워드 기반 이미지 URL 생성 로직을 제안하거나
-  // 혹은 Gemini의 이미지 생성 능력을 활용할 수 있는 구조를 만듭니다.
-  // 여기서는 Picsum seed를 페르소나 특징에 맞게 생성하여 반환합니다.
-  const seed = encodeURIComponent(`${persona.name}-${persona.role}-${persona.traits.join('-')}`);
-  return `https://picsum.photos/seed/${seed}/400/400`;
+  return "";
 }

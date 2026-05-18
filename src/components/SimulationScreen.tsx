@@ -215,11 +215,6 @@ export default function SimulationScreen({ persona, scenario, onBack, onFinish }
               <Info className="w-4 h-4" /> 대상자 상세 정보
             </h3>
             <div className="space-y-4">
-              {persona.imageUrl && (
-                <div className="w-full h-48 rounded-lg overflow-hidden border border-slate-200 shadow-inner mb-4">
-                  <img src={persona.imageUrl} alt={persona.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
               <div className="flex justify-between items-center bg-slate-100 p-2 rounded">
                 <span className="text-[11px] font-bold text-slate-500">성향 (MBTI)</span>
                 <span className="text-xs font-bold text-hyundai-blue">{persona.mbti}</span>

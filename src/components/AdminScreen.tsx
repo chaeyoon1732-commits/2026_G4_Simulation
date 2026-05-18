@@ -60,7 +60,7 @@ export default function AdminScreen({ onClose, personas, scenarios, isDemoMode, 
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'hyundai2026') {
+    if (password.trim() === '6927376') {
       setIsAuthenticated(true);
     } else {
       alert('비밀번호가 틀렸습니다.');
